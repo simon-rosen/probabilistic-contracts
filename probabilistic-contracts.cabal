@@ -26,15 +26,15 @@ source-repository head
 library
   exposed-modules:
       Generate.LTL
-      Logics.LTL
-      Logics.Operations
-      Logics.PropositionalLogic
       Math
       ProbContract
-      Solve.LRA
-      Solve.LTL
-      Solve.Solvers.Black
-      Solve.Solvers.Z3
+      Reductions.LinearEq
+      Reductions.Reduction
+      Solvers.LinearEq.Z3
+      Solvers.LTL.Aalta
+      Solvers.LTL.Black
+      Specs.LTL
+      Specs.Spec
   other-modules:
       Paths_probabilistic_contracts
   autogen-modules:

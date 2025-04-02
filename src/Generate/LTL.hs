@@ -1,5 +1,5 @@
 module Generate.LTL where
-import           Logics.LTL
+import           Specs.LTL
 import           Test.QuickCheck
 
 instance Arbitrary Formula where
