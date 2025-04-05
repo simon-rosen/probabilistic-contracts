@@ -2,11 +2,12 @@
 module Solvers.LTL.Black
   ( solve
   ) where
+import           Solvers.Solver
 import           Specs.LTL
-import           System.Process (readProcess)
+import           System.Process (readProcessWithExitCode)
 
 -- | solve a LTL formula with black
-solve :: Formula -> IO (Either String Bool)
+solve :: Formula -> IO SolverResult
 solve f = callBlack (ltl2black f)
 
 -- convert an LTL formula to blacks format
@@ -26,11 +27,8 @@ ltl2black f = case f of
       "(" <> ltl2black f1 <> ") " <> op <> " (" <> ltl2black f2 <> ")"
 
 -- call black and get a result
-callBlack :: String -> IO (Either String Bool)
+callBlack :: String -> IO SolverResult
 callBlack str = do
-  res <- readProcess "black" ["solve", "-f", str] ""
-  pure $ case res of
-    "SAT\n"   -> Right True
-    "UNSAT\n" -> Right False
-    _         -> Left res
+  res <- readProcessWithExitCode "black" ["solve", "-f", str] ""
+  pure $ parseRes "black" "SAT" "UNSAT" res
 

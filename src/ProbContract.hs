@@ -6,8 +6,8 @@ import           Data.Maybe           (fromJust)
 import           Math
 import           Reductions.LinearEq  (LinearEq (..))
 import qualified Reductions.Reduction as Reduction
-import qualified Specs.Spec           as Spec
-import           Specs.Spec           (Spec)
+import qualified Specs.Solvable       as Solvable
+import           Specs.Solvable       (Solvable)
 
 data ProbContract a = ProbContract (Probability (a, a))
   deriving (Show, Eq)
@@ -24,7 +24,7 @@ mkProbContract (a, g) c p = ProbContract (Probability (a, g) (mkCompare c) p)
 -- refines another probabilistic contract
 -- If this function returns true then the refinement is correct,
 -- if it returns false then it is unknown
-refines :: (Eq a, Spec a) => String -> String ->
+refines :: (Eq a, Solvable a) => String -> String ->
   ProbContract a -> [ProbContract a] -> IO (Either String Bool)
 refines specSolver ineqSolver sysSpec componentSpecs = do
   -- step 1: calculate the nonempty variables
@@ -92,10 +92,10 @@ varFormula contracts var =
 ---------------------------------------------------------------------
 -- | naive method to get all vars that are non-empty: check each var,
 -- (there are 2^2n vars for n contracts)
-nonZeroVars :: (Spec a) => String -> [ProbContract a] -> IO (Either String [Var])
+nonZeroVars :: (Solvable a) => String -> [ProbContract a] -> IO (Either String [Var])
 nonZeroVars solver pcs = do
   let vars = [Var i | i <- [0..(2^(2 * length pcs) - 1)]]
-  res <- mapM (\var -> Spec.solve solver (varFormula pcs var)) vars
+  res <- mapM (\var -> Solvable.solve solver (varFormula pcs var)) vars
   case sequence res of
     Left err   -> pure $ Left err
     Right sats -> pure $ Right [var | (var, True) <- zip vars sats]

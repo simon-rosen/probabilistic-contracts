@@ -25,6 +25,7 @@ dependencies:
 - containers
 - process
 - temporary
+- async
 
 ghc-options:
 - -Wall

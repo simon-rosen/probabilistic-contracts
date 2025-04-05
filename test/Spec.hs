@@ -1,8 +1,8 @@
-import qualified Generate.LTL as GenLTL
+import qualified Generate.LTL   as GenLTL
 import           Math
 import           ProbContract
-import qualified Specs.LTL    as LTL
-import qualified Specs.Spec   as Spec
+import qualified Specs.LTL      as LTL
+import qualified Specs.Solvable as Solvable
 
 
 main :: IO ()
@@ -36,6 +36,6 @@ testLTLsat = do
   f <- GenLTL.generateFormula 20 ["a", "b", "c"]
   --putStrLn $ LTL.pretty f
   print f
-  res <- Spec.solve "black" f
+  res <- Solvable.solve "spot" f
   pure res
 

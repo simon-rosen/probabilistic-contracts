@@ -33,8 +33,10 @@ library
       Solvers.LinearEq.Z3
       Solvers.LTL.Aalta
       Solvers.LTL.Black
+      Solvers.LTL.Portfolio
+      Solvers.LTL.Spot
       Specs.LTL
-      Specs.Spec
+      Specs.Solvable
   other-modules:
       Paths_probabilistic_contracts
   autogen-modules:
@@ -44,6 +46,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       QuickCheck
+    , async
     , base >=4.7 && <5
     , containers
     , process
@@ -61,6 +64,7 @@ executable probabilistic-contracts-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , async
     , base >=4.7 && <5
     , containers
     , probabilistic-contracts
@@ -80,6 +84,7 @@ test-suite probabilistic-contracts-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , async
     , base >=4.7 && <5
     , containers
     , probabilistic-contracts

@@ -1,11 +1,12 @@
 module Solvers.LTL.Aalta
   ( solve
   ) where
+import           Solvers.Solver
 import           Specs.LTL
-import           System.Process (readProcess)
+import           System.Process (readProcessWithExitCode)
 
 -- | solve an LTL formula with aalta
-solve :: Formula -> IO (Either String Bool)
+solve :: Formula -> IO SolverResult
 solve f = callAalta (ltl2aalta f)
 
 -- convert an LTL formula to aalta syntax
@@ -26,13 +27,7 @@ ltl2aalta f = case f of
 
 
 -- make a call to aalta and parse the result
-callAalta :: String -> IO (Either String Bool)
+callAalta :: String -> IO SolverResult
 callAalta str = do
-  res <- readProcess "aalta" [] str
-  --putStrLn $ "aalta res: " <> show (lines res !! 1)
-  let answer = lines res !! 1
-  pure $ case answer of
-    "sat"   -> Right True
-    "unsat" -> Right False
-    _       -> Left res
-
+  res <- readProcessWithExitCode "aalta" [] str
+  pure $ parseRes "aalta" "sat" "unsat" res
