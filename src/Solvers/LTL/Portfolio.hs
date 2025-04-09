@@ -3,40 +3,66 @@
 -- finisher it terminates all processess
 module Solvers.LTL.Portfolio where
 
-import qualified Solvers.LTL.Aalta        as Aalta
-import qualified Solvers.LTL.Black        as Black
-import qualified Solvers.LTL.Spot         as Spot
+import           Control.Concurrent.Timeout (timeout)
+import qualified Solvers.LTL.Aalta          as Aalta
+import qualified Solvers.LTL.Black          as Black
+import qualified Solvers.LTL.Spot           as Spot
+import           Solvers.Solver
 import           Specs.LTL
 
 
 import           Control.Concurrent.Async
-import           Data.Either              (isRight)
-import           Data.List                (delete)
+import           Control.Monad              (forM, void)
+import           Data.List                  (delete)
 
 
-{-
-type Solver = (String, Formula -> IO (Either String Bool))
+solve :: Formula -> IO SolverResult
+solve = runSolversInParallel [ ("aalta", Aalta.solve)
+                             , ("black", Black.solve)
+                             , ("spot", Spot.solve)
+                             ]
 
 
-portfolioSolver :: [Solver] -> Formula -> IO (Either String Bool)
-portfolioSolver solvers formula = go [] solvers
+-- | this function runs all solvers in parallel and returns once any of them
+-- gives a result. If all of them should fail then the error messages for them all
+-- is returned.
+runSolversInParallel :: [(String, Solver)] -> Formula -> IO SolverResult
+runSolversInParallel solvers f = do
+  -- start all solvers in parallel
+  jobs <- forM solvers $ \(name, solver) -> async $ do
+    result <- timeout 10000000 $ solver f -- run the solvingAction
+    case result of
+      Nothing  -> pure (name, TimedOut)
+      Just res -> pure (name, res)
+
+  -- wait for the first result / all of them to fail
+  result <- waitResult jobs []
+  -- cancel any remaining solvers
+  --mapM_ cancel jobs
+  mapM_ (\job -> cancel job >> waitCatch job) jobs
+  --putStrLn "cancelling solvers"
+  -- return result
+  pure result
+
   where
-    go running [] = do
-      -- No more solvers left and none succeeded
-      return (Left "No solver returned Right Bool")
-    go running (s:ss) = withAsync (s formula) $ \a -> do
-      let running' = a : running
-      -- Wait for any solver to finish
-      (done, result) <- waitAny running'
-      case result of
-        Right _ -> return result  -- Got a good result
-        _       -> go (delete done running') ss  -- Keep going with others
+    waitResult :: [Async (String, SolverResult)] -> [(String, SolverResult)] -> IO SolverResult
+    waitResult jobs errors = case jobs of
+      -- all solvers failed
+      []        -> do
+        putStrLn "all solvers failed"
+        pure $ Failed ("all solvers failed")
+      _ -> do
+        (job, (name, solverRes)) <- waitAny jobs
+        case solverRes of
+          Completed b -> do
+            --putStrLn $ "formula solved by: " <> name
+            print solverRes
+            pure $ Completed b
+          Failed err           -> do
+            putStrLn $ name <> " error: " <> err
+            waitResult (delete job jobs) []
+          TimedOut -> do
+            putStrLn $ name <> " timed out"
+            waitResult (delete job jobs) []
 
 
-solve :: Solver
-solve = portfolioSolver [ ("aalta", Aalta.solve)
-                        , ("black", Black.solve)
-                        , ("spot", Spot.solve)
-                        ]
-
--}

@@ -26,6 +26,8 @@ dependencies:
 - process
 - temporary
 - async
+- unbounded-delays
+- unix
 
 ghc-options:
 - -Wall

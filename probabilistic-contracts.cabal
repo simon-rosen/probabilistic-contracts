@@ -35,7 +35,10 @@ library
       Solvers.LTL.Black
       Solvers.LTL.Portfolio
       Solvers.LTL.Spot
+      Solvers.Solver
       Specs.LTL
+      Specs.MTL
+      Specs.Propositional
       Specs.Solvable
   other-modules:
       Paths_probabilistic_contracts
@@ -51,6 +54,8 @@ library
     , containers
     , process
     , temporary
+    , unbounded-delays
+    , unix
   default-language: Haskell2010
 
 executable probabilistic-contracts-exe
@@ -70,6 +75,8 @@ executable probabilistic-contracts-exe
     , probabilistic-contracts
     , process
     , temporary
+    , unbounded-delays
+    , unix
   default-language: Haskell2010
 
 test-suite probabilistic-contracts-test
@@ -90,4 +97,6 @@ test-suite probabilistic-contracts-test
     , probabilistic-contracts
     , process
     , temporary
+    , unbounded-delays
+    , unix
   default-language: Haskell2010

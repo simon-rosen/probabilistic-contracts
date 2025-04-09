@@ -1,6 +1,7 @@
 -- | All solvers will return similar results
 module Solvers.Solver where
 import           Data.List   (isInfixOf)
+import           Specs.LTL
 import           System.Exit (ExitCode)
 
 -- | An external solver either completes and returns a bool,
@@ -23,5 +24,6 @@ parseRes solverName sat unsat (code, out, err)
         , "stderr: " <> err
         ]
 
+type Solver = Formula -> IO SolverResult
 
-
+type AsyncSolver = Formula -> IO (IO SolverResult, IO ())
