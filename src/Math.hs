@@ -42,16 +42,13 @@ instance Show Compare where
 
 -- | a type for expressing variables in equations,
 -- we just alias Integer for this
-newtype Var = Var Integer
+data Var = Var String | NumberedVar String Integer
             deriving (Eq, Ord)
 
 instance Show Var where
-  show = showVar "x"
-
--- | show a variable with a custom prefix
-showVar :: String -> Var -> String
-showVar letter (Var i) = letter <> show i
-
+  show v = case v of
+    Var name           -> name
+    NumberedVar name i -> name <> show i
 
 -- | a type for representing probability statements, ex: P(x) = p
 data Probability x = Probability x Compare Double

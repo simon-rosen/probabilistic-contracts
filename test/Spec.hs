@@ -1,14 +1,17 @@
 import qualified Generate.LTL      as GenLTL
+import qualified Generate.MLTL     as GenMLTL
 import           Math
 import           ProbContract
 import qualified Solvers.LTL.Aalta as Aalta
 import qualified Specs.LTL         as LTL
+import qualified Specs.MLTL        as MLTL
 import qualified Specs.Solvable    as Solvable
 
 
 main :: IO ()
 main = putStrLn "Test suite not yet implemented"
 
+----------------- ltl ----------------------------
 testRefinement :: IO ()
 testRefinement = do
   -- system contract
@@ -47,4 +50,13 @@ testLTLsat = do
   print $ Aalta.ltl2aalta f
   res <- Solvable.solveWithTimeout 10000000 "portfolio" f
   pure res
+
+------------------------ mltl --------------------------------
+testMLTLsat = do
+  f <- GenMLTL.generateFormula 10 ["a", "b", "c", "d", "e"]
+  putStrLn $ show f
+  --print $ Aalta.ltl2aalta f
+  res <- Solvable.solveWithTimeout 10000000 "portfolio" f
+  pure res
+
 

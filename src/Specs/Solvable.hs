@@ -19,6 +19,15 @@ class (Complementable a, Intersectable a) => Solvable a where
   -- Returns either an error from the external program
   -- or a result
   solve :: String -> a -> IO (Either String Bool)
+  -- solve with a timeout given in microseconds, this has a default implementation
+  solveWithTimeout :: Integer -> String -> a -> IO (Either String Bool)
+  solveWithTimeout t solver f = do
+    res <- timeout t $ solve solver f
+    case res of
+      Nothing  -> pure $ Left "TimedOut"
+      Just res -> case res of
+        Left err -> pure $ Left err
+        Right b  -> pure $ Right b
 
 
 solverResultToEither :: SolverResult -> Either String Bool
@@ -29,15 +38,6 @@ solverResultToEither res = case res of
 
 
 -- | set a timeout on a solver in microseconds
-solveWithTimeout :: (Solvable a) => Integer -> String -> a -> IO (Either String Bool)
-solveWithTimeout t solver f = do
-  res <- timeout t $ solve solver f
-  case res of
-    Nothing  -> pure $ Left "TimedOut"
-    Just res -> case res of
-      Left err -> pure $ Left err
-      Right b  -> pure $ Right b
-
 
 instance Solvable LTL.Formula where
   solve solver f = case solver of
@@ -47,12 +47,16 @@ instance Solvable LTL.Formula where
     "portfolio" -> solverResultToEither <$> Portfolio.solve f
     _           -> pure $ Left ("unknown solver: " <> solver)
 
-instance Solvable MTL.Formula where
+instance Solvable MLTL.Formula where
+  -- convert to LTL (string representation) and solve that formula
   solve solver f =
-    let ltl = MTL.toLTL f -- first transform the MTL formula to LTL
-    in solve solver ltl -- then solve the LTL formula
+    let ltlstr = MLTL.toLTLString
+    in case solver of
+      "black"     -> solverResultToEither <$> Black.callBlack ltlstr
+      "aalta"     -> solverResultToEither <$> Aalta.callAalta ltlstr
+      "spot"      -> solverResultToEither <$> Spot.callSpot ltlstr
+      "portfolio" -> solverResultToEither <$> Portfolio.callPortfolio ltlstr
+      _           -> pure $ Left ("unknown solver: " <> solver)
 
-instance Solvable Propositional.Formula where
-  solve solver f =
-    let ltl = Propositional.toLTL f -- first transform the propositional logic formula to LTL
-    in solve solver ltl -- then solve the LTL formula
+
+

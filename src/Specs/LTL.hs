@@ -20,3 +20,21 @@ instance Complementable Formula where
 instance Intersectable Formula where
   intersect f1 f2 = f1 `And` f2
 
+-- | pretty print an LTL formula. All external solvers accept
+-- this syntax as well.
+pretty :: Formula -> String
+pretty f = case f of
+    Atom p        -> p
+    Not f         -> "!(" <> pretty f <> ")"
+    Or f1 f2      -> binopstr f1 "|" f2
+    And f1 f2     -> binopstr f1 "&" f2
+    Implies f1 f2 -> binopstr f1 "->" f2
+    Next f        -> "X(" <> pretty f <> ")"
+    Future f      -> "F(" <> pretty f <> ")"
+    Globally f    -> "G(" <> pretty f <> ")"
+    Until f1 f2   -> binopstr f1 "U" f2
+  where
+    binopstr f1 op f2 =
+      "(" <> pretty f1 <> ") " <> op <> " (" <> pretty f2 <> ")"
+
+

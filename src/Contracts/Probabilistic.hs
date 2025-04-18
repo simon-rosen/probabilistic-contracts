@@ -1,4 +1,4 @@
-module ProbContract where
+module Contracts.Probabilistic where
 import           Control.Monad        (filterM, mapM)
 import           Data.Bits            ((.&.))
 import           Data.List            (elemIndex)

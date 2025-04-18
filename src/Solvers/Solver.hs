@@ -26,4 +26,5 @@ parseRes solverName sat unsat (code, out, err)
 
 type Solver = Formula -> IO SolverResult
 
-type AsyncSolver = Formula -> IO (IO SolverResult, IO ())
+type SolverCaller = String -> IO SolverResult
+

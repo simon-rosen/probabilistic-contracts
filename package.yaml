@@ -42,6 +42,11 @@ ghc-options:
 
 library:
   source-dirs: src
+  exposed-modules:
+    - Parse.Lexer
+  build-tool-depends:
+    - alex
+    - happy
 
 executables:
   probabilistic-contracts-exe:
