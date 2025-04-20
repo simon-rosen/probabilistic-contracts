@@ -1,7 +1,5 @@
 module Solvers.LTL.Aalta
   ( solve
-  , ltl2aalta
-  , callAalta
   ) where
 import           Control.Exception        (bracket, evaluate)
 import           Data.List                (isInfixOf)
@@ -15,7 +13,7 @@ import           System.Process.Internals
 
 -- | solve an LTL formula with aalta
 solve :: Formula -> IO SolverResult
-solve f = callAalta (pretty f)
+solve f = callAalta (show f)
 
 -- make a call to aalta and parse the result
 --

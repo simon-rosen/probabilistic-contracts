@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 
-module Reductions.Reduction where
-import           Reductions.LinearEq
-import qualified Solvers.LinearEq.Z3 as Z3
+module Contracts.Refinement.Reductions.Reduction where
+import           Contracts.Refinement.Reductions.LinearEq
+import qualified Solvers.LinearEq.Z3                      as Z3
 
 class Reduction a where
   solve :: String -> a -> IO (Either String Bool)

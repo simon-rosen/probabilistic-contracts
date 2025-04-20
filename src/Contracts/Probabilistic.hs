@@ -1,20 +1,23 @@
 module Contracts.Probabilistic where
-import           Control.Monad        (filterM, mapM)
-import           Data.Bits            ((.&.))
-import           Data.List            (elemIndex)
-import           Data.Maybe           (fromJust)
+import           Contracts.Refinement.Reductions.LinearEq  (LinearEq (..))
+import qualified Contracts.Refinement.Reductions.Reduction as Reduction
+import           Control.Monad                             (filterM, mapM)
+import           Data.Bits                                 ((.&.))
+import           Data.List                                 (elemIndex)
+import           Data.Maybe                                (fromJust)
 import           Math
-import           Reductions.LinearEq  (LinearEq (..))
-import qualified Reductions.Reduction as Reduction
-import qualified Specs.Solvable       as Solvable
-import           Specs.Solvable       (Solvable)
+import qualified Specs.Solvable                            as Solvable
+import           Specs.Solvable                            (Solvable)
 
 data ProbContract a = ProbContract (Probability (a, a))
-  deriving (Show, Eq)
+  deriving (Eq)
 
 instance Complementable (ProbContract a) where
   complement (ProbContract p) = ProbContract (complement p)
 
+instance Show a => Show (ProbContract a) where
+  show (ProbContract (Probability (a, g) c p)) =
+    "P(" <> show a <> ", " <> show g <> ") " <> show c <> " " <> show p
 
 mkProbContract :: (a, a) -> String -> Double -> ProbContract a
 mkProbContract (a, g) c p = ProbContract (Probability (a, g) (mkCompare c) p)
@@ -52,7 +55,7 @@ refines t specSolver ineqSolver sysSpec componentSpecs = do
 -- Convert a variable (number) into its binary representation
 -- (but reversed: 1010 = 1*2^0 + 0*2^1 + 1*2^2 + 0*2^3) with a certain length
 var2bin :: Var -> Int -> [Int]
-var2bin (Var v) len =
+var2bin (NumberedVar _ v) len =
   let bin = dec2bin (fromIntegral v)
   in bin <> take (len - length bin) (repeat 0)
   where
@@ -96,7 +99,7 @@ varFormula contracts var =
 -- (there are 2^2n vars for n contracts)
 nonZeroVars :: (Solvable a) => Integer -> String -> [ProbContract a] -> IO (Either String [Var])
 nonZeroVars timeout solver pcs = do
-  let vars = [Var i | i <- [0..(2^(2 * length pcs) - 1)]]
+  let vars = [NumberedVar "z" i | i <- [0..(2^(2 * length pcs) - 1)]]
   res <- mapM (\var -> Solvable.solveWithTimeout timeout solver (varFormula pcs var)) vars
   case sequence res of
     Left err   -> pure $ Left err
@@ -118,9 +121,9 @@ createIneqs pcs vars =
 createContractIneq :: [Var] -> Int -> ProbContract a -> LinearEq
 createContractIneq vars id (ProbContract (Probability _ c p)) =
   -- left side vars
-  let lhs = filter (\(Var var) -> agNum (fromIntegral id) .&. var == agNum (fromIntegral id)) vars
+  let lhs = filter (\(NumberedVar _ var) -> agNum (fromIntegral id) .&. var == agNum (fromIntegral id)) vars
   -- right side vars
-      rhs = filter (\(Var var) -> aNum (fromIntegral id) .&. var == aNum (fromIntegral id)) vars
+      rhs = filter (\(NumberedVar _ var) -> aNum (fromIntegral id) .&. var == aNum (fromIntegral id)) vars
   in ContractEq lhs c p rhs
 
 

@@ -26,25 +26,28 @@ source-repository head
 library
   exposed-modules:
       Parse.Lexer
-  other-modules:
-      Contracts.LinearEq
-      Contracts.Probabilistic
-      Contracts.Reduction
       Generate.LTL
       Generate.MLTL
-      Generate.ProbContract
+      Parse.LTLParser
+      Parse.MLTLParser
+      Specs.LTL
+      Specs.MLTL
+      Specs.Solvable
+      Contracts.Probabilistic
       Math
+  other-modules:
+      Contracts.Refinement.Reductions.LinearEq
+      Contracts.Refinement.Reductions.Reduction
+      Generate.ProbContract
+      Parse.ProbContractParser
       Solvers.LinearEq.Z3
       Solvers.LTL.Aalta
       Solvers.LTL.Black
       Solvers.LTL.Portfolio
       Solvers.LTL.Spot
       Solvers.Solver
-      Specs.LTL
-      Specs.MLTL
       Specs.MTL
       Specs.Propositional
-      Specs.Solvable
       Paths_probabilistic_contracts
   autogen-modules:
       Paths_probabilistic_contracts
@@ -56,10 +59,12 @@ library
     , happy
   build-depends:
       QuickCheck
+    , array
     , async
     , base >=4.7 && <5
     , containers
     , process
+    , random
     , temporary
     , unbounded-delays
     , unix
@@ -76,11 +81,13 @@ executable probabilistic-contracts-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , array
     , async
     , base >=4.7 && <5
     , containers
     , probabilistic-contracts
     , process
+    , random
     , temporary
     , unbounded-delays
     , unix
@@ -90,7 +97,9 @@ test-suite probabilistic-contracts-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      MTL
+      Formulas
+      ParsingSpec
+      Refinement
       Paths_probabilistic_contracts
   autogen-modules:
       Paths_probabilistic_contracts
@@ -99,11 +108,14 @@ test-suite probabilistic-contracts-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
+    , array
     , async
     , base >=4.7 && <5
     , containers
+    , hspec
     , probabilistic-contracts
     , process
+    , random
     , temporary
     , unbounded-delays
     , unix

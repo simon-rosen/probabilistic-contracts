@@ -13,7 +13,7 @@ import           System.Process
 -- | solve a LTL formula with spot (my script that does both the translation
 -- to automata and then checks emptiness)
 solve :: Formula -> IO SolverResult
-solve f = callSpot (pretty f)
+solve f = callSpot (show f)
 
 -- make a call to spot_ltl_sat.py and parse the result
 --

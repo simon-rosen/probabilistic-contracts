@@ -3,11 +3,11 @@ module Solvers.LinearEq.Z3
   ( solve
   ) where
 
+import           Contracts.Refinement.Reductions.LinearEq
 import           Math
-import           Reductions.LinearEq
-import           System.IO           (hClose, hPutStr)
-import           System.IO.Temp      (withSystemTempFile)
-import           System.Process      (readProcess)
+import           System.IO                                (hClose, hPutStr)
+import           System.IO.Temp                           (withSystemTempFile)
+import           System.Process                           (readProcess)
 
 solve :: [LinearEq] -> IO (Either String Bool)
 solve ineqs = checkLineqs (toSMT ineqs)

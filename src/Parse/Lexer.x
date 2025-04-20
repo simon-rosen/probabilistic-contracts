@@ -16,6 +16,9 @@ tokens :-
   "#".*                          ; -- "#" starts a comment that continues until the end of the line
   "("                            { \s -> LPar }
   ")"                            { \s -> RPar }
+  "["                            { \s -> LBrack }
+  "]"                            { \s -> RBrack }
+  ","                            { \s -> Comma }
   "!"                            { \s -> Not }
   "&"                            { \s -> And }
   "|"                            { \s -> Or }
@@ -24,6 +27,13 @@ tokens :-
   "F"                            { \s -> Future }
   "X"                            { \s -> Next }
   "U"                            { \s -> Until }
+  "P"                            { \s -> Prob }
+  "<"                            { \s -> Less }
+  "<="                           { \s -> Leq }
+  ">"                            { \s -> Greater }
+  ">="                           { \s -> Geq }
+  (0 | [1-9][0-9]*)              { \s -> IntLit (read s) }
+  (0 | [1-9][0-9]*) "." ([0-9]+) { \s -> DoubleLit (read s) }
   $alpha [$alpha $digit]*  { \s -> Ident s } -- an identifier (propositional literal in this program) must start with a alhanumeric and can then contain both alhanumerics and numbers
 
 {
@@ -33,7 +43,12 @@ tokens :-
 data Token 
   = LPar
   | RPar
+  | LBrack
+  | RBrack
+  | Comma
   | Ident String
+  | IntLit Int
+  | IntLit Double
   | Not
   | And
   | Or
@@ -42,6 +57,7 @@ data Token
   | Future
   | Next
   | Until
+  | Prob
   deriving (Eq, Show)
 
 }

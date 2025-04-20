@@ -1,4 +1,4 @@
-module Reductions.LinearEq where
+module Contracts.Refinement.Reductions.LinearEq where
 import qualified Data.Set as Set
 import           Math
 

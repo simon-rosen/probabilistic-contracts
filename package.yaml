@@ -28,6 +28,8 @@ dependencies:
 - async
 - unbounded-delays
 - unix
+- array
+- random
 
 ghc-options:
 - -Wall
@@ -44,7 +46,16 @@ library:
   source-dirs: src
   exposed-modules:
     - Parse.Lexer
-  build-tool-depends:
+    - Generate.LTL
+    - Generate.MLTL
+    - Parse.LTLParser
+    - Parse.MLTLParser
+    - Specs.LTL
+    - Specs.MLTL
+    - Specs.Solvable
+    - Contracts.Probabilistic
+    - Math
+  build-tools:
     - alex
     - happy
 
@@ -69,3 +80,4 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - probabilistic-contracts
+    - hspec

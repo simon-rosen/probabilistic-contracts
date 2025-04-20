@@ -12,7 +12,7 @@ import           System.Process
 
 -- | solve a LTL formula with black
 solve :: Formula -> IO SolverResult
-solve f = callBlack (pretty f)
+solve f = callBlack (show f)
 
 -- make a call to black and parse the result
 --

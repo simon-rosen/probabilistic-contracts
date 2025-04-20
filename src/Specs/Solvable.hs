@@ -7,7 +7,7 @@ import qualified Solvers.LTL.Portfolio      as Portfolio
 import qualified Solvers.LTL.Spot           as Spot
 import           Solvers.Solver
 import qualified Specs.LTL                  as LTL
-import qualified Specs.MTL                  as MTL
+import qualified Specs.MLTL                 as MLTL
 import qualified Specs.Propositional        as Propositional
 
 -- a class for representing specs
@@ -48,15 +48,7 @@ instance Solvable LTL.Formula where
     _           -> pure $ Left ("unknown solver: " <> solver)
 
 instance Solvable MLTL.Formula where
-  -- convert to LTL (string representation) and solve that formula
-  solve solver f =
-    let ltlstr = MLTL.toLTLString
-    in case solver of
-      "black"     -> solverResultToEither <$> Black.callBlack ltlstr
-      "aalta"     -> solverResultToEither <$> Aalta.callAalta ltlstr
-      "spot"      -> solverResultToEither <$> Spot.callSpot ltlstr
-      "portfolio" -> solverResultToEither <$> Portfolio.callPortfolio ltlstr
-      _           -> pure $ Left ("unknown solver: " <> solver)
-
-
+  solve solver f = do
+    ltlF <- MLTL.toLTL f
+    solve solver ltlF
 
