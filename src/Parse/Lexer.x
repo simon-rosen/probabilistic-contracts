@@ -16,6 +16,7 @@ tokens :-
   "#".*                          ; -- "#" starts a comment that continues until the end of the line
   "("                            { \s -> LPar }
   ")"                            { \s -> RPar }
+  "[="                           { \s -> Refines }
   "["                            { \s -> LBrack }
   "]"                            { \s -> RBrack }
   ","                            { \s -> Comma }
@@ -32,8 +33,10 @@ tokens :-
   "<="                           { \s -> Leq }
   ">"                            { \s -> Greater }
   ">="                           { \s -> Geq }
-  (0 | [1-9][0-9]*)              { \s -> IntLit (read s) }
-  (0 | [1-9][0-9]*) "." ([0-9]+) { \s -> DoubleLit (read s) }
+  --"[="                           { \s -> Refines }
+  "||"                           { \s -> Composed }
+  (0|[1-9][0-9]*) "." ([0-9]+) ("e-" $digit+)? { \s -> DoubleLit (read s) }
+  (0|[1-9][0-9]*)              { \s -> IntLit (read s) }
   $alpha [$alpha $digit]*  { \s -> Ident s } -- an identifier (propositional literal in this program) must start with a alhanumeric and can then contain both alhanumerics and numbers
 
 {
@@ -48,7 +51,7 @@ data Token
   | Comma
   | Ident String
   | IntLit Int
-  | IntLit Double
+  | DoubleLit Double
   | Not
   | And
   | Or
@@ -58,6 +61,12 @@ data Token
   | Next
   | Until
   | Prob
+  | Less
+  | Leq
+  | Greater
+  | Geq
+  | Refines
+  | Composed
   deriving (Eq, Show)
 
 }

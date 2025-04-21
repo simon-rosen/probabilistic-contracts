@@ -1,11 +1,12 @@
 module Refinement where
 import           Contracts.Probabilistic
-import qualified Generate.LTL            as GenLTL
-import qualified Generate.MLTL           as GenMLTL
+import           Contracts.Refinement.Refines
+import qualified Generate.LTL                 as GenLTL
+import qualified Generate.MLTL                as GenMLTL
 import           Math
-import qualified Specs.LTL               as LTL
-import qualified Specs.MLTL              as MLTL
-import qualified Specs.Solvable          as Solvable
+import qualified Specs.LTL                    as LTL
+import qualified Specs.MLTL                   as MLTL
+import qualified Specs.Solvable               as Solvable
 
 
 

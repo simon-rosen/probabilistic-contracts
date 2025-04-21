@@ -28,18 +28,18 @@ library
       Parse.Lexer
       Generate.LTL
       Generate.MLTL
+      Generate.ProbContract
       Parse.LTLParser
       Parse.MLTLParser
       Specs.LTL
       Specs.MLTL
       Specs.Solvable
       Contracts.Probabilistic
+      Contracts.Refinement.Refines
       Math
   other-modules:
       Contracts.Refinement.Reductions.LinearEq
       Contracts.Refinement.Reductions.Reduction
-      Generate.ProbContract
-      Parse.ProbContractParser
       Solvers.LinearEq.Z3
       Solvers.LTL.Aalta
       Solvers.LTL.Black

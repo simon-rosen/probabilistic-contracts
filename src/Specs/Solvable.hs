@@ -37,7 +37,6 @@ solverResultToEither res = case res of
   TimedOut    -> Left "timeout"
 
 
--- | set a timeout on a solver in microseconds
 
 instance Solvable LTL.Formula where
   solve solver f = case solver of
