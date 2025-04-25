@@ -16,7 +16,6 @@ tokens :-
   "#".*                          ; -- "#" starts a comment that continues until the end of the line
   "("                            { \s -> LPar }
   ")"                            { \s -> RPar }
-  "[="                           { \s -> Refines }
   "["                            { \s -> LBrack }
   "]"                            { \s -> RBrack }
   ","                            { \s -> Comma }
@@ -33,7 +32,7 @@ tokens :-
   "<="                           { \s -> Leq }
   ">"                            { \s -> Greater }
   ">="                           { \s -> Geq }
-  --"[="                           { \s -> Refines }
+  "]="                           { \s -> Refines }
   "||"                           { \s -> Composed }
   (0|[1-9][0-9]*) "." ([0-9]+) ("e-" $digit+)? { \s -> DoubleLit (read s) }
   (0|[1-9][0-9]*)              { \s -> IntLit (read s) }

@@ -95,6 +95,12 @@ nonZeroVars timeout solver pcs = do
     Left err   -> pure $ Left err
     Right sats -> pure $ Right [var | (var, True) <- zip vars sats]
 
+-- | Probably a better way of serarching for non-zero varibles:
+-- try (A0 | A0^C), (G0 | G0^C), (A1 | A1^C), ...
+-- incrementally and stop early on branches that are already non-sat.
+nonZeroVarsSearch :: (Solvable a) => Integer -> String -> [ProbContract a] -> IO (Either String [Var])
+nonZeroVarsSearch = undefined
+
 -- | reduce refinement verification to solving a system of linear inequalities
 createIneqs :: (Eq a) => [ProbContract a] -> [Var] -> [LinearEq]
 createIneqs pcs vars =

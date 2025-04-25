@@ -54,4 +54,30 @@ different logics.
 * SMT-solver: [Z3](https://github.com/Z3Prover/z3)
 * PSAT-solver: ?
 
+## syntax of the contracts
+
+The tool is meant to be used to solve refinement problems for probabilistic
+contracts specified with LTL and MLTL.
+
+## How to use the tool
+### solving refinement
+Here are some examples on how the tool is expected to be used from the command
+line.
+
+Solve a refinement problem (for contracts specified with LTL) written in a file
+```bash
+probabilistic-contracts solve --lang LTL --file example.pc
+```
+
+Solve a refinement problem (for contracts specified with MLTL), where the
+problem is supplied as an argument 
+```bash
+probabilistic-contracts solve --lang MLTL --problem 'P(((p4) -> (G[2,2](F[1,6](p3)))) & (G[9,9](p5)), G[9,10](F[9,9]((!((p3) & (p4))) -> (p5)))) > 0.4786220769399635 ]= P(F[4,9](G[8,10]((p5) & (!((p2) -> (p3))))), ((p4) | (F[5,10](p4))) -> ((p1) & (!(p3)))) <= 0.8571528545768496 || P((p3) & (F[10,10](!(!((p5) -> (p1))))), G[6,8](G[1,8](G[1,6]((p5) U[1,2](!(p3)))))) >= 0.2564396157936457 || P(!((G[9,9](p4)) | (!((p2) U[4,6](p4)))), ((p2) -> ((G[5,6](p1)) U[2,5](G[9,9](p4)))) | (p3)) <= 0.14063748298715617
+'
+```
+*OBS*: use single quotes '' instead of double quotes "" around the problem to avoid weird bash bugs.
+
+
+### generating testcases
+The tool can also generate random problem instances.
 

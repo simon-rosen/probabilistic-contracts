@@ -28,5 +28,5 @@ data RefinementProblem a =
 
 instance Show a => Show (RefinementProblem a) where
   show rp =
-    show (systemContract rp) <> " [= "
+    show (systemContract rp) <> " ]= "
     <> (concat . intersperse " || " . map show) (componentContracts rp)

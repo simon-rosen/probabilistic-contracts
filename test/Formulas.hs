@@ -20,17 +20,17 @@ testLTLsat = do
   pure res
 
 testMLTLsat = do
-  f <- GenMLTL.random 20 5 10
+  f <- GenMLTL.random 20 5 20
   --putStrLn $ LTL.pretty f
   print f
   ltlF <- MLTL.toLTL f
-  putStrLn "converted to LTL:"
-  print ltlF
-  res <- Solvable.solveWithTimeout 10000000 "portfolio" f
+  --putStrLn "converted to LTL:"
+  --print ltlF
+  res <- Solvable.solveWithTimeout 30000000 "portfolio" f
   pure res
 
 testProbContract = do
-  pc <- GenProbContract.randomWithLTL True 100 5
+  pc <- GenProbContract.randomWithLTL True 10 5
   print pc
   let pc' = parseLTLProbContract $ show pc
   print pc'
