@@ -31,6 +31,7 @@ dependencies:
 - array
 - random
 - optparse-applicative
+- filepath
 
 ghc-options:
 - -Wall
@@ -58,6 +59,7 @@ library:
     - Contracts.Probabilistic
     - Contracts.Refinement.Refines
     - Math
+    - ArgParser
   build-tools:
     - alex
     - happy

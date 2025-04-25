@@ -1,51 +1,103 @@
-- | parsing command line arguments
+-- | parsing command line arguments
+--
+-- inspired by https://learn-haskell.blog/05-glue/04-optparse.html
 module ArgParser
-  ( Args (..)
-  , parseArgs
+  ( parseArgs
+  , SubCommand (..)
+  , Lang (..)
+  , Input (..)
   ) where
 
 import           Options.Applicative
+import           System.FilePath     (FilePath)
 
-data Args = Args
-  { optimizedSearch :: Bool
-  , lang            :: String
-  , input           :: Input
-  } deriving (Show)
 
+-- | I want to support two types of functionalities:
+-- 1. Verifying refinement of problem instances
+-- 2. Generating refinement problem instances
+data SubCommand = Verify Lang Input
+                | Generate Lang
+                deriving (Show)
+
+-- | The tool supports contracts written in these languages
+data Lang = LTL
+          | MLTL
+          deriving (Show)
+
+-- | The input to the verification subcommand can be supplied from
+-- 1. the command line as an argument
+-- 2. the path to a file where the problem is written
+data Input = ArgInput String
+           | FileInput FilePath
+           deriving (Show)
+
+
+-- | run the argument parser
+parseArgs :: IO SubCommand
 parseArgs = execParser $
-  info (args <**> helper)
-    (fullDesc
-    <> progDesc "Verifies refinement of probabilistic contracts"
-    <> header "probabilistic-contracts")
+  info (helper <*> pSubCommand)
+    ( fullDesc
+      <> header "probabilistic-contracts"
+      <> progDesc "verifies refinement of probabilistic contracts specified with LTL/MLTL"
+    )
 
-args :: Parser Args
-args = Args
-  <$> strOption (long "lang"
-            <> metavar "LANG"
-            <> help "The specification language that the probabilistic contracts are written in. Can be either LTL or MLTL")
-  <*> switch (long "compile"
-            <> help "compile the program into an executable")
-  <*> argument str (metavar "filename" <> help "the cigrid-program file to be compiled")
+-- parsing subcommands
+pSubCommand :: Parser SubCommand
+pSubCommand = subparser
+  (command "verify"
+      (info
+         (helper <*> pVerify)
+         (progDesc "verify a refinement statement")
+      )
+    <> command "generate"
+      (info
+        (helper <*> pGenerate)
+        (progDesc "generate a refinement problem")
+      )
+  )
 
--- parse what specification language to use
-data SpecLang = SpecLang String
+-- parsing verify subcommand
+pVerify :: Parser SubCommand
+pVerify = Verify <$> pLang <*> pInput
 
-parseLTLSpec :: Parser SpecLang
-parseLTLSpec = str
+pLang :: Parser Lang
+pLang = option (eitherReader readLang)
+        ( long "lang"
+        <> metavar "LANGUAGE"
+        <> help "language used in the contract (LTL/MLTL)"
+        )
+        where
+          readLang s = case s of
+            "LTL"  -> Right LTL
+            "MLTL" -> Right MLTL
+            _      -> Left $ "Invalid language: " <> s
 
--- parsing the formula, either from a file or from a string in the command call
--- or from stdin
-data Input = FileInput String
-           | ArgInput String
-           | StdInput
+pInput :: Parser Input
+pInput = pArgInput <|> pFileInput
 
-parseFileInput :: Parser Input
-parseFileInput = FileInput <$> strOption
-  (long "file" <> metavar "FILENAME" <> help "use a refinement problem from a file")
+pArgInput :: Parser Input
+pArgInput = ArgInput <$>
+  strOption
+    ( long "problem"
+    <> metavar "REFINEMENT_PROBLEM"
+    <> help "supply a refinement problem to be verified directly from the command line"
+    )
 
-parseArgInput :: Parser Input
-parseArgInput = FileInput <$> strOption
-  (long "formula" <> metavar "REFINEMENT PROBLEM" <> help "use a refinement problem written in this argument")
+pFileInput :: Parser Input
+pFileInput = FileInput <$>
+  strOption
+    ( long "file"
+    <> metavar "FILE"
+    <> help "the file where the refinement problem is stored"
+    )
+
+-- parsing generate subcommand
+pGenerate :: Parser SubCommand
+pGenerate = Generate <$> pLang
+
+
+
+
 
 
 

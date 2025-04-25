@@ -37,8 +37,8 @@ library
       Contracts.Probabilistic
       Contracts.Refinement.Refines
       Math
-  other-modules:
       ArgParser
+  other-modules:
       Contracts.Refinement.Reductions.LinearEq
       Contracts.Refinement.Reductions.Reduction
       Solvers.LinearEq.Z3
@@ -64,6 +64,7 @@ library
     , async
     , base >=4.7 && <5
     , containers
+    , filepath
     , optparse-applicative
     , process
     , random
@@ -87,6 +88,7 @@ executable probabilistic-contracts-exe
     , async
     , base >=4.7 && <5
     , containers
+    , filepath
     , optparse-applicative
     , probabilistic-contracts
     , process
@@ -115,6 +117,7 @@ test-suite probabilistic-contracts-test
     , async
     , base >=4.7 && <5
     , containers
+    , filepath
     , hspec
     , optparse-applicative
     , probabilistic-contracts
