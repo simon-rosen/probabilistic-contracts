@@ -39,6 +39,8 @@ library
       Math
       ArgParser
   other-modules:
+      Benchmark.Benchmark
+      Benchmark.Database
       Contracts.Refinement.Reductions.LinearEq
       Contracts.Refinement.Reductions.Reduction
       Solvers.LinearEq.Z3
@@ -68,7 +70,10 @@ library
     , optparse-applicative
     , process
     , random
+    , split
+    , sqlite-simple
     , temporary
+    , time
     , unbounded-delays
     , unix
   default-language: Haskell2010
@@ -93,7 +98,10 @@ executable probabilistic-contracts-exe
     , probabilistic-contracts
     , process
     , random
+    , split
+    , sqlite-simple
     , temporary
+    , time
     , unbounded-delays
     , unix
   default-language: Haskell2010
@@ -123,7 +131,10 @@ test-suite probabilistic-contracts-test
     , probabilistic-contracts
     , process
     , random
+    , split
+    , sqlite-simple
     , temporary
+    , time
     , unbounded-delays
     , unix
   default-language: Haskell2010

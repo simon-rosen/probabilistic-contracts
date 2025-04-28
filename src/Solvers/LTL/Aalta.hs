@@ -1,14 +1,12 @@
 module Solvers.LTL.Aalta
   ( solve
   ) where
-import           Control.Exception        (bracket, evaluate)
-import           Data.List                (isInfixOf)
+import           Control.Exception (bracket, evaluate, finally)
+import           Data.List         (isInfixOf)
 import           Solvers.Solver
 import           Specs.LTL
 import           System.IO
-import           System.Posix.Signals
 import           System.Process
-import           System.Process.Internals
 
 
 -- | solve an LTL formula with aalta
@@ -22,36 +20,55 @@ solve f = callAalta (show f)
 
 callAalta :: String -> IO SolverResult
 callAalta str = bracket
-  (do
-    -- start aalta
-      (Just hin, Just hout, Just herr, handle) <- createProcess (proc "aalta" [])
+  -- startup code: start aalta
+  ( createProcess (proc "aalta" [])
         { std_in = CreatePipe, std_out = CreatePipe, std_err = CreatePipe }
-      pure (hin, hout, herr, handle)) -- startup
-  (\(hin, hout, herr, handle) -> do
+  )
+  -- cleanup code: terminate process and close all handles
+  (\(mhin, mhout, mherr, ph) -> do
+    -- close all handles (safely)
+    mapM_ safeClose [mhin, mhout, mherr]
     -- terminate the child process
-    terminateProcess handle
-    --_ <- waitForProcess handle
-    --putStrLn "terminating aalta"
+    terminateProcess ph
+    _ <- waitForProcess ph
     pure ()
-    ) -- cleanup
-  (\(hin, hout, herr, handle) -> do
+  )
+  -- worker code: send the input via stdin and parse the result
+  (\(mhin, mhout, mherr, ph) -> do
     -- Write the formula string to Aalta's stdin, flush, and close to signal EOF.
-    hPutStrLn hin str
-    hFlush hin
-    hClose hin
+    safeWriteAndClose mhin str
     -- read the results
-    out <- hGetContents hout
-    _   <- evaluate (length out)  -- force complete evaluation of the output
-    err <- hGetContents herr
-    _   <- evaluate (length err)  -- force complete evaluation of the error stream
+    out <- safeReadAndClose mhout
+    -- and any errors
+    err <- safeReadAndClose mherr
     -- parse it
     case parseOut "sat" "unsat" out of
       Right b -> pure $ Completed b
       Left _-> do
-        err <- hGetContents herr
         let msg = "aalta failed!\nstdout: " <> out <> "\nstderr: " <> err
         pure $ Failed msg
     ) -- work
+  where
+    -- safely close a process handle
+    safeClose h = case h of
+      Nothing -> pure ()
+      Just h' -> hClose h' `finally` pure ()
+    -- safely read the contents from a file (strictly) handle and close it
+    safeReadAndClose h = case h of
+      Nothing -> pure ""
+      Just h' -> do
+        out <- hGetContents h'
+        -- make this a strict IO operation
+        _   <- evaluate (length out)
+        hClose h'
+        pure out
+    safeWriteAndClose h s = case h of
+      Nothing -> pure ()
+      Just h' -> do
+        hPutStrLn h' s
+        hFlush h'
+        hClose h' `finally` pure ()
+
 
 
 parseOut :: String -> String -> String -> Either String Bool
@@ -60,34 +77,3 @@ parseOut sat unsat out
   | sat `isInfixOf` out = Right True
   | otherwise = Left out
 
-{-
--- | Spawn the Aalta process, send the input formula via stdin,
--- read its stdout and stderr strictly, and parse the result.
-solve :: Formula -> IO SolverResult
-solve formula =
-  withCreateProcess (proc "aalta" [])
-    { std_in  = CreatePipe, std_out = CreatePipe, std_err = CreatePipe } $ \mbIn mbOut mbErr ph -> do
-      hin  <- maybe (error "Aalta: missing stdin") return mbIn
-      hout <- maybe (error "Aalta: missing stdout") return mbOut
-      herr <- maybe (error "Aalta: missing stderr") return mbErr
-
-      -- Write the formula string to Aalta's stdin, flush, and close to signal EOF.
-      hPutStrLn hin (ltl2aalta formula)
-      hFlush hin
-      hClose hin
-
-      -- Read the output strictly.
-      out <- hGetContents hout
-      _   <- evaluate (length out)  -- force complete evaluation of the output
-      err <- hGetContents herr
-      _   <- evaluate (length err)  -- force complete evaluation of the error stream
-
-      _ <- waitForProcess ph
-
-      case parseOut "sat" "unsat" out of
-        Right b -> do
-          putStrLn "formula solved by aalta"
-          pure $ Completed b
-        Left _ -> pure $ Failed ("aalta erros!\n out: " <> out <> "\nerr:" <> err <> "\n")
-
--}

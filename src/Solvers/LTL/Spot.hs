@@ -3,7 +3,7 @@ module Solvers.LTL.Spot
   , callSpot
   ) where
 
-import           Control.Exception (bracket)
+import           Control.Exception (bracket, evaluate, finally)
 import           Data.List         (isInfixOf)
 import           Solvers.Solver
 import           Specs.LTL
@@ -21,35 +21,52 @@ solve f = callSpot (show f)
 -- external resources (in this case creation and termination of the external solver)
 callSpot :: String -> IO SolverResult
 callSpot str = bracket
-  (do
-    -- start spot_ltl_sat.py
-      (Just hin, Just hout, Just herr, handle) <- createProcess (proc "spot_ltl_sat.py" [str])
+  -- startup code: start spot_ltl_sat.py
+  (createProcess (proc "spot_ltl_sat.py" [str])
         { std_in = CreatePipe, std_out = CreatePipe, std_err = CreatePipe }
-      pure (hin, hout, herr, handle)) -- startup
-  (\(_, _, _, handle) -> do
+  )
+  -- cleanup code: terminate the process and close all handles
+  (\(mhin, mhout, mherr, ph) -> do
+    -- close all handles (safely)
+    mapM_ safeClose [mhin, mhout, mherr]
     -- terminate the child process
-    terminateProcess handle
-    _ <- waitForProcess handle
-    --putStrLn "terminating spot"
+    terminateProcess ph
+    _ <- waitForProcess ph
     pure ()
-    ) -- cleanup
-  (\(hin, hout, herr, handle) -> do
+  )
+  -- worker code: run the solver and interpret the result
+  (\(mhin, mhout, mherr, ph) -> do
     -- read the results
-    out <- hGetContents hout
-    err <- hGetContents herr
+    out <- safeReadAndClose mhout
+    -- and any errors
+    err <- safeReadAndClose mherr
     -- parse it
     case parseOut "sat" "unsat" out of
-      Right b -> do
-        putStrLn "formula solved by spot"
-        pure $ Completed b
+      Right b -> pure $ Completed b
       Left _-> do
-        err <- hGetContents herr
         let msg = "stdout: " <> out <> "\nstderr: " <> err
         pure $ Failed msg
     ) -- work
+  where
+    -- safely close a process handle
+    safeClose h = case h of
+      Nothing -> pure ()
+      Just h' -> hClose h' `finally` pure ()
+    -- safely read the contents from a file (strictly) handle and close it
+    safeReadAndClose h = case h of
+      Nothing -> pure ""
+      Just h' -> do
+        out <- hGetContents h'
+        -- make this a strict IO operation
+        _   <- evaluate (length out)
+        hClose h'
+        pure out
+
+
 
 parseOut :: String -> String -> String -> Either String Bool
 parseOut sat unsat out
   | unsat `isInfixOf` out = Right False
   | sat `isInfixOf` out = Right True
-  | otherwise = Left out    --
+  | otherwise = Left out
+

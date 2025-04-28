@@ -5,9 +5,11 @@ module Solvers.LinearEq.Z3
 
 import           Contracts.Refinement.Reductions.LinearEq
 import           Math
+import           System.Exit                              (ExitCode (..))
 import           System.IO                                (hClose, hPutStr)
 import           System.IO.Temp                           (withSystemTempFile)
-import           System.Process                           (readProcess)
+import           System.Process                           (readProcessWithExitCode)
+import           Text.Printf                              (printf)
 
 solve :: [LinearEq] -> IO (Either String Bool)
 solve ineqs = checkLineqs (toSMT ineqs)
@@ -27,20 +29,38 @@ toSMT ineqs =
       -- left side, added a 0 so that the equation makes when no variables are present
       "(assert (" <> show c <> " (+ 0" <> concatMap (\v -> " " <> show v) vsl <> ") " <>
       -- right side
-        "(* " <> show p <> " (+ 0" <> concatMap (\v -> " " <> show v) vsr <> "))))\n"
+        "(* " <> showDouble p <> " (+ 0" <> concatMap (\v -> " " <> show v) vsr <> "))))\n"
     ) ineqs <>
   -- instruct solver to check satisfiability
   "(check-sat)"
+  where
+    -- we dont want to print with scientific notation
+    showDouble :: Double -> String
+    showDouble d = printf "%.16f" d
 
 checkLineqs :: String -> IO (Either String Bool)
 checkLineqs smt = do
   withSystemTempFile "lineqs.smt2" $ \tmpFile tmpHandle -> do
     hPutStr tmpHandle smt
     hClose tmpHandle
-    res <- readProcess "z3" [tmpFile] ""
+    --res <- readProcess "z3" [tmpFile] ""
     -- print res
-    pure $ case res of
-      "sat\n"   -> Right True
-      "unsat\n" -> Right False
-      _         -> Left res
+    --pure $ case res of
+    --  "sat\n"   -> Right True
+    --  "unsat\n" -> Right False
+    --  _         -> Left res
+    -- run Z3, capturing exit code, stdout, and stderr
+    (ec, out, err) <- readProcessWithExitCode "z3" [tmpFile] ""
+
+    case ec of
+      ExitSuccess ->
+        case out of
+          "sat\n"   -> pure (Right True)
+          "unsat\n" -> pure (Right False)
+          other     -> pure (Left $ "Unexpected Z3 output:\n" ++ other)
+
+      ExitFailure _ -> do
+        putStrLn smt
+        -- include both stdout and stderr in the error message
+        pure (Left $ "Z3 failed with:\n" ++ "stdout:\n" ++ out ++ "stderr:\n" ++ err)
 

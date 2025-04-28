@@ -32,6 +32,9 @@ dependencies:
 - random
 - optparse-applicative
 - filepath
+- sqlite-simple
+- time
+- split
 
 ghc-options:
 - -Wall

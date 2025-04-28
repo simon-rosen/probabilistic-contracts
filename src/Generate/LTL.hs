@@ -3,17 +3,14 @@ import           Specs.LTL
 import           System.Random (randomRIO)
 
 -- generate a random LTL formula with approx `parseTreeSize` nodes
--- in its parse tree and with the number of allowed atoms limited by `atomUnivSize`
-random :: Int -> Int -> IO Formula
-random parseTreeSize atomUnivSize = go parseTreeSize
+-- in its parse tree and with the atoms from allowedAtoms
+random :: Int -> [Formula] -> IO Formula
+random parseTreeSize allowedAtoms = go parseTreeSize
   where
-    -- setup the allowed atoms
-    allowedAtoms = zipWith (\p n -> p <> show n) (repeat "p") [1..atomUnivSize]
     -- function to get a random atom from the allowed ones
     randomAtom = do
-      i <- randomRIO (0, atomUnivSize - 1)
-      let name = allowedAtoms !! i
-      pure $ Atom name
+      i <- randomRIO (0, (length allowedAtoms) - 1)
+      pure $ allowedAtoms !! i
     -- function to split up the size of the left and right parse tree in a
     -- tree of size n with root as a binary operator
     splitN :: Int -> IO (Int, Int)
