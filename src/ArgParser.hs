@@ -15,16 +15,10 @@ import           System.FilePath     (FilePath)
 -- | I want to support two types of functionalities:
 -- 1. Verifying refinement of problem instances
 -- 2. Generating refinement problem instances
--- 3. Run benchmarking using a certein parameter space
-data SubCommand = Verify Lang Input --Timeout
-                | Generate Lang
-                -- benchmark with parameters
-                -- * specification languages to use (LTL,MLTL)
-                -- * how many components
-                -- * how many operators per formula
-                -- * how many atoms per I/O var
-                -- * max time (for MLTL only)
-                -- | Benchmark [Lang] Int Int Int Int Timeout
+-- 3. Run a benchmark on a problem and optionally store the result in a database
+data SubCommand = Verify Lang Input --(Maybe Timeout)
+                | Generate Lang Int Int Int Int
+                -- | Benchmark Lang Input Database Timeout
                 deriving (Show)
 
 -- | The tool supports contracts written in these languages
@@ -39,6 +33,13 @@ data Input = ArgInput String
            | FileInput FilePath
            deriving (Show)
 
+-- | the database configuration (just its name for now)
+data Database = Database String
+              deriving (Show)
+
+-- | the timeout (in seconds) of running the full algorithm
+data Timeout = Timeout Int
+             deriving (Show)
 
 -- | run the argument parser
 parseArgs :: IO SubCommand

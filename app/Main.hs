@@ -22,6 +22,7 @@ main = do
           str <- readFile path
           let ltl = parseLTLRefinementProblem str
           print ltl
+
       MLTL -> case inp of
         ArgInput str -> do
           let p = parseMLTLRefinementProblem str
