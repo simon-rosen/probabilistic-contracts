@@ -25,9 +25,9 @@ oneSecond = 1000000
 -- it took to solve the equation system.
 --
 -- Also record the number of "non-zero" variables and the result of the refinement
-benchmarkRefinement :: (Eq a, Solvable a) => Secs -> Secs -> Secs -> (RefinementProblem a)
+benchmarkRefinement :: (Eq a, Solvable a) => Secs -> Secs -> (RefinementProblem a)
   -> IO (Either String (Secs, Secs, Int, Bool))
-benchmarkRefinement satTime varsTime sysTime problem = do
+benchmarkRefinement varsTime sysTime problem = do
   let contracts = (systemContract problem : componentContracts problem)
   -- find all "non-empty" variables
   -- * the full search is given a timeout of 10min
@@ -35,7 +35,7 @@ benchmarkRefinement satTime varsTime sysTime problem = do
   -- so if many of them takes > 1min then the total time could be too large)
   putStrLn "finding vars"
   t0 <- getCurrentTime
-  eVars <- timeout ((round varsTime)*oneSecond) $ nonZeroVars ((round satTime)*oneSecond) "portfolio" contracts
+  eVars <- timeout ((round varsTime)*oneSecond) $ nonZeroVars "portfolio" contracts
   t1 <- getCurrentTime
   case eVars of
     Nothing -> pure $ Left "finding vars error: timeout"
@@ -87,7 +87,7 @@ runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms = do
                                       , ltlSolvingSysTime = 0.0
                                       }
   -- run the benchmark
-  benchRes <- benchmarkRefinement (10*60) (10*60) (10*60) rp
+  benchRes <- benchmarkRefinement (10*60) (10*60) rp
   case benchRes of
     Left err -> do
       putStrLn $ "error in benchmark: " <> err
@@ -134,7 +134,7 @@ runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime = do
                                        , mltlSolvingSysTime = 0.0
                                        }
   -- run the benchmark
-  benchRes <- benchmarkRefinement (10*60) (10*60) (10*60) rp
+  benchRes <- benchmarkRefinement (10*60) (10*60) rp
   case benchRes of
     Left err -> do
       putStrLn $ "error in benchmark: " <> err
@@ -168,7 +168,7 @@ runBenchmarks = do
   -- close db
   close conn
   -- repeat
-  runBenchmarks
+  --runBenchmarks
 
 
 

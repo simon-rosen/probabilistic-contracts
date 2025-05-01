@@ -12,6 +12,7 @@ import           Specs.Solvable                            (Solvable)
 
 
 
+
 -- | refinement verification - by a reduction to QF_LRA
 -- check if a parallel composition of a set of probabilistic contracts
 -- refines another probabilistic contract
@@ -19,11 +20,11 @@ import           Specs.Solvable                            (Solvable)
 -- if it returns false then it is unknown.
 --
 -- The first argument is a timeout for the spec sat solver
-refines :: (Eq a, Solvable a) => Integer -> String -> String ->
+refines :: (Eq a, Solvable a) => String -> String ->
   ProbContract a -> [ProbContract a] -> IO (Either String Bool)
-refines t specSolver ineqSolver sysSpec componentSpecs = do
+refines specSolver ineqSolver sysSpec componentSpecs = do
   -- step 1: calculate the nonempty variables
-  Right vars <- nonZeroVars t specSolver (sysSpec : componentSpecs)
+  Right vars <- nonZeroVars specSolver (sysSpec : componentSpecs)
   -- step 2: create system of linear inequalities
   let ineqs = createIneqs (sysSpec : componentSpecs) vars
   -- step 3: solve the equation system
@@ -93,10 +94,10 @@ varFormula contracts var =
 ---------------------------------------------------------------------
 -- | naive method to get all vars that are non-empty: check each var,
 -- (there are 2^2n vars for n contracts)
-nonZeroVars :: (Solvable a) => Integer -> String -> [ProbContract a] -> IO (Either String [Var])
-nonZeroVars timeout solver pcs = do
+nonZeroVars :: (Solvable a) => String -> [ProbContract a] -> IO (Either String [Var])
+nonZeroVars solver pcs = do
   let vars = [NumberedVar "z" i | i <- [0..(2^(2 * length pcs) - 1)]]
-  res <- mapM (\var -> Solvable.solveWithTimeout timeout solver (varFormula pcs var)) vars
+  res <- mapM (\var -> Solvable.solve solver (varFormula pcs var)) vars
   case sequence res of
     Left err   -> pure $ Left err
     Right sats -> pure $ Right [var | (var, True) <- zip vars sats]
