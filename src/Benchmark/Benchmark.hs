@@ -5,8 +5,9 @@ import           Contracts.Probabilistic
 import           Contracts.Refinement.Refines
 import           Control.Concurrent.Timeout   (timeout)
 import           Data.Time.Clock
-import           Database.SQLite.Simple       (close, open)
-import           Generate.ProbContract        (randomRefinementProblemWithLTL)
+import           Database.SQLite.Simple       (Connection, close, open)
+import           Generate.ProbContract        (randomRefinementProblemWithLTL,
+                                               randomRefinementProblemWithMLTL)
 import           Specs.Solvable
 import           System.Random                (randomRIO)
 
@@ -58,9 +59,10 @@ benchmarkRefinement satTime varsTime sysTime problem = do
           putStrLn $ "success: " <> show (secs1, secs2, numVars, refinesResult)
           pure $ Right (secs1, secs2, numVars, refinesResult)
 
+
 -- | run one random benchmarks on LTL refinement problems in some parameter space
-runLTLBenchmark :: Int -> Int -> Int -> IO ()
-runLTLBenchmark maxComponents maxFormulaSize maxAtoms = do
+runLTLBenchmark :: Connection -> Int -> Int -> Int -> IO ()
+runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms = do
   -- generate the random configuration
   comps <- randomRIO (1, maxComponents)
   mfs <- randomRIO (1, maxFormulaSize)
@@ -70,28 +72,101 @@ runLTLBenchmark maxComponents maxFormulaSize maxAtoms = do
               <> " atoms = " <> show ma
   -- get a random LTL refinement problem
   rp <- randomRefinementProblemWithLTL comps mfs ma
+  -- create an initial model for the database
+  let probModel = LTLProblemBenchmark { ltlProblem = show rp
+                                      , ltlNumComponents = comps
+                                      , ltlFormulaSize = mfs
+                                      , ltlAtomsPerVar = ma
+                                      -- some default values that will be overwritten based
+                                      -- on the result of the benchmark
+                                      , ltlCompleted = False
+                                      , ltlErrorMsg = "success"
+                                      , ltlResult = False
+                                      , ltlNumNonEmptyVars = 0
+                                      , ltlFindingVarsTime = 0.0
+                                      , ltlSolvingSysTime = 0.0
+                                      }
   -- run the benchmark
-  benchRes <- benchmarkRefinement 60 (10*60) (10*60) rp
+  benchRes <- benchmarkRefinement (10*60) (10*60) (10*60) rp
   case benchRes of
-    Left err -> putStrLn $ "error in benchmark: " <> err
+    Left err -> do
+      putStrLn $ "error in benchmark: " <> err
     Right (vt, st, nv, res) -> do
       -- save to database
-      conn <- open "benchmark.db"
-      createLTLProblemsTable conn
-      let benchmark = LTLProblemBenchmark { ltlProblem = show rp
-                                          , ltlFindingVarsTime = vt
-                                          , ltlSolvingSysTime = st
-                                          , ltlResult = show res
-                                          }
+      let benchmark =
+            probModel { ltlCompleted = True
+                      , ltlResult = res
+                      , ltlNumNonEmptyVars = nv
+                      , ltlFindingVarsTime = vt
+                      , ltlSolvingSysTime = st
+                      }
       insertLTLProblemBenchmark conn benchmark
-      close conn
       pure ()
+
+
+-- | run one random benchmark on MLTL refinement problems in some parameter space
+runMLTLBenchmark :: Connection -> Int -> Int -> Int -> Int -> IO ()
+runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime = do
+  -- generate the random configuration
+  comps <- randomRIO (1, maxComponents)
+  mfs <- randomRIO (1, maxFormulaSize)
+  ma <- randomRIO (1, maxAtoms)
+  mt <- randomRIO (1, maxTime)
+  putStrLn $ "configuration: MLTL, components = " <> show comps
+              <> " formulaSize = " <> show mfs
+              <> " atoms = " <> show ma
+              <> " maxTime  = " <> show mt
+  -- get a random LTL refinement problem
+  rp <- randomRefinementProblemWithMLTL comps mfs ma mt
+  -- create an initial model for the database
+  let probModel = MLTLProblemBenchmark { mltlProblem = show rp
+                                       , mltlNumComponents = comps
+                                       , mltlFormulaSize = mfs
+                                       , mltlAtomsPerVar = ma
+                                       , mltlMaxTime = mt
+                                       -- some default values that will be overwritten based
+                                       -- on the result of the benchmark
+                                       , mltlCompleted = False
+                                       , mltlErrorMsg = "success"
+                                       , mltlResult = False
+                                       , mltlNumNonEmptyVars = 0
+                                       , mltlFindingVarsTime = 0.0
+                                       , mltlSolvingSysTime = 0.0
+                                       }
+  -- run the benchmark
+  benchRes <- benchmarkRefinement (10*60) (10*60) (10*60) rp
+  case benchRes of
+    Left err -> do
+      putStrLn $ "error in benchmark: " <> err
+    Right (vt, st, nv, res) -> do
+      -- save to database
+      createLTLProblemsTable conn
+      let benchmark =
+            probModel { mltlCompleted = True
+                      , mltlResult = res
+                      , mltlNumNonEmptyVars = nv
+                      , mltlFindingVarsTime = vt
+                      , mltlSolvingSysTime = st
+                      }
+      insertMLTLProblemBenchmark conn benchmark
+      pure ()
+
 
 
 runBenchmarks :: IO ()
 runBenchmarks = do
-  putStrLn "new benchmark"
-  runLTLBenchmark 5 50 10
+  -- setup db
+  conn <- open "benchmark.db"
+  createLTLProblemsTable conn
+  createMLTLProblemsTable conn
+  -- write some info
+  t <- getCurrentTime
+  putStrLn $ "\nnew benchmark started at " <> show t
+  -- run benchmark
+  runMLTLBenchmark conn 2 20 5 10
+  putStrLn "benchmark finished\n"
+  -- close db
+  close conn
   -- repeat
   runBenchmarks
 

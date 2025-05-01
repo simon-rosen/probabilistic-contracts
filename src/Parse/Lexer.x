@@ -34,6 +34,8 @@ tokens :-
   ">="                           { \s -> Geq }
   "]="                           { \s -> Refines }
   "||"                           { \s -> Composed }
+  "top"                          { \s -> Top }
+  "bottom"                       { \s -> Bottom }
   (0|[1-9][0-9]*) "." ([0-9]+) ("e-" $digit+)? { \s -> DoubleLit (read s) }
   (0|[1-9][0-9]*)              { \s -> IntLit (read s) }
   $alpha [$alpha $digit]*  { \s -> Ident s } -- an identifier (propositional literal in this program) must start with a alhanumeric and can then contain both alhanumerics and numbers
@@ -66,6 +68,8 @@ data Token
   | Geq
   | Refines
   | Composed
+  | Top
+  | Bottom
   deriving (Eq, Show)
 
 }

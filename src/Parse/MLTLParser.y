@@ -41,6 +41,8 @@ import qualified Math
   '&'             { L.And }
   '|'             { L.Or }
   '->'            { L.Implies }
+  'top'           { L.Top }
+  'bottom'        { L.Bottom }
   'G'             { L.Globally }
   'F'             { L.Future }
   'U'             { L.Until }
@@ -60,6 +62,8 @@ Phi   : '(' Phi ')'                             { $2 }
       | Phi '&' Phi                             { And $1 $3 }
       | Phi '|' Phi                             { Or $1 $3 }
       | Phi '->' Phi                            { Implies $1 $3 }
+      | 'top'                                   { Top }
+      | 'bottom'                                { Bottom }
       | 'G' '[' int ',' int ']' Phi             { Globally ($3, $5) $7 }
       | 'F' '[' int ',' int ']' Phi             { Future ($3, $5) $7 }
       | Phi 'U' '[' int ',' int ']' Phi         { Until ($4, $6) $1 $8 }

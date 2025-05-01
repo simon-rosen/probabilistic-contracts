@@ -3,7 +3,9 @@ import           Math
 
 -- | A LTL formula
 data Formula =
-  Atom String -- ^ p
+    Top -- always true
+  | Bottom -- always false
+  | Atom String -- ^ p
   | Not Formula -- ^ !phi
   | Or Formula Formula -- ^ phi1 | phi2
   | And Formula Formula -- ^ phi1 & phi2
@@ -24,6 +26,8 @@ instance Intersectable Formula where
 -- syntacx that is accepted by the external solvers.
 instance Show Formula where
   show f = case f of
+      Top           -> "(top | !top)"
+      Bottom        -> "(bottom & !bottom)"
       Atom p        -> p
       Not f         -> "!(" <> show f <> ")"
       Or f1 f2      -> binopstr f1 "|" f2

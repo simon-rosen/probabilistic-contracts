@@ -50,14 +50,27 @@ randomIneq strict = do
 -- of the previous one, and the Input/Output variables for a component must be disjunct
 -- (the assumption can only use atoms that talk about its input variables,
 -- and the guarantee can use atoms that talk about both the input and output
--- variables)
+-- variables).
+-- ex: component vars = [(X1, X2), (X2, X3) (X3,X4)]
+--     system vars = (X1, X4)
+--     , where Xi is a set of variables
+--     , I will generate some atoms for each set of variables
 generateIOVarAtoms :: Int -> Int -> [([LTL.Formula], [LTL.Formula])]
 generateIOVarAtoms numComponents numAtomsPerVar = let
-  -- there are 2*numComponents IO vars, and each have numAtomsPerVar atoms
-  allAtoms = [LTL.Atom ("p" <> show v) | v <- [1..2*numComponents*numAtomsPerVar]]
+  -- there are numComponents + 1 IO vars, and each have numAtomsPerVar atoms
+  allAtoms = [ LTL.Atom ("p" <> show v)
+             | v <- [1..numAtomsPerVar * (numComponents+1)]
+             ]
+  -- group all atoms belonging to the same I/O var
   atomsPerVar = chunksOf numAtomsPerVar allAtoms
-  -- now return using the format [([Atom], [Atom])]
-  in map (\[a,b] -> (a,b)) $ chunksOf 2 atomsPerVar
+  -- a function to put all the atoms for a components I/O vars
+  -- in a tuple (i,o), such that each component gets the vars
+  -- [(a1, a2), (a2, a3), (a3, a4), ...]
+  -- where ai is a set of atoms
+  createCompAtoms varsLeft = case varsLeft of
+    (as1:as2:[])   -> [(as1, as2)]
+    (as1:as2:left) -> (as1, as2) : createCompAtoms (as2:left)
+  in createCompAtoms atomsPerVar
 
 -- | Generate a random refinement problem using contracts specified with LTL
 -- args:

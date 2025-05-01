@@ -35,6 +35,7 @@ dependencies:
 - sqlite-simple
 - time
 - split
+- bytestring
 
 ghc-options:
 - -Wall

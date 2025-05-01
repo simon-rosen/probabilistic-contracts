@@ -34,6 +34,8 @@ import qualified Math
   'F'             { L.Future }
   'X'             { L.Next }
   'U'             { L.Until }
+  'top'           { L.Top }
+  'bottom'        { L.Bottom }
   -- contract
   'P'             { L.Prob }
   ','             { L.Comma }
@@ -58,6 +60,8 @@ Phi   : '(' Phi ')'         { $2 }
       | Phi '&' Phi         { And $1 $3 }
       | Phi '|' Phi         { Or $1 $3 }
       | Phi '->' Phi        { Implies $1 $3 }
+      | 'top'               { Top }
+      | 'bottom'            { Bottom }
       | 'G' Phi             { Globally $2 }
       | 'F' Phi             { Future $2 }
       | 'X' Phi             { Next $2 }

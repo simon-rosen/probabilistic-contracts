@@ -14,15 +14,22 @@ main = do
         ArgInput str -> do
           let p = parseLTLRefinementProblem str
           res <- refines 10000000 "portfolio" "z3" (systemContract p) (componentContracts p)
-          print res
+          case res of
+            Left err    -> putStrLn $ "error: " <> show err
+            Right False -> putStrLn "unknown"
+            Right True  -> putStrLn "true"
         FileInput path -> do
           str <- readFile path
           let ltl = parseLTLRefinementProblem str
           print ltl
       MLTL -> case inp of
         ArgInput str -> do
-          let ltl = parseMLTLRefinementProblem str
-          print ltl
+          let p = parseMLTLRefinementProblem str
+          res <- refines 10000000 "portfolio" "z3" (systemContract p) (componentContracts p)
+          case res of
+            Left err    -> putStrLn $ "error: " <> show err
+            Right False -> putStrLn "unknown"
+            Right True  -> putStrLn "true"
         FileInput path -> do
           str <- readFile path
           let p = parseMLTLRefinementProblem str

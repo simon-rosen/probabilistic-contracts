@@ -65,6 +65,7 @@ library
     , array
     , async
     , base >=4.7 && <5
+    , bytestring
     , containers
     , filepath
     , optparse-applicative
@@ -92,6 +93,7 @@ executable probabilistic-contracts-exe
     , array
     , async
     , base >=4.7 && <5
+    , bytestring
     , containers
     , filepath
     , optparse-applicative
@@ -124,6 +126,7 @@ test-suite probabilistic-contracts-test
     , array
     , async
     , base >=4.7 && <5
+    , bytestring
     , containers
     , filepath
     , hspec

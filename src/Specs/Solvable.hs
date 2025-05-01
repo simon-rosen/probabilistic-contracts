@@ -48,6 +48,8 @@ instance Solvable LTL.Formula where
 
 instance Solvable MLTL.Formula where
   solve solver f = do
-    ltlF <- MLTL.toLTL f
-    solve solver ltlF
+    converted <- MLTL.toLTL f
+    case converted of
+      Left err   -> (solverResultToEither <$> (pure $ Failed "failed during conversion"))
+      Right ltlF -> solve solver ltlF
 
