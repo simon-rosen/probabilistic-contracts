@@ -30,8 +30,6 @@ runSolversInParallel :: [(String, Solver)] -> Formula -> IO SolverResult
 runSolversInParallel solvers f = do
   -- start all solvers in parallel
   jobs <- forM solvers $ \(name, solver) -> async $ do
-    -- hardcoded each solver to have a 1min timeout, which
-    -- is what will be used in my experiment
     result <- solver f -- run the solvingAction
     pure (name, result)
 
@@ -42,9 +40,9 @@ runSolversInParallel solvers f = do
   -- explicitly kill all solvers (this makes running this whole function in parallell
   -- impossible, but i dont want to do that anyway). There was a problem with solvers
   -- getting stuck and not responding to their termination messages.
-  forM_ solvers $ \(name, _) -> do
-    (e, _, _) <- readProcessWithExitCode "pkill" ["-9", "-f", name] ""
-    pure e
+  forM_ ["aalta", "black", "spot_ltl_sat.py", "z3"] $ \name -> do
+    _ <- readProcessWithExitCode "pkill" ["-9", "-f", name] ""
+    pure ()
   -- return result
   pure result
   where

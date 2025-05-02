@@ -64,6 +64,8 @@ library:
     - Contracts.Refinement.Refines
     - Math
     - ArgParser
+    - Benchmark.Benchmark
+    - Benchmark.Database
   build-tools:
     - alex
     - happy

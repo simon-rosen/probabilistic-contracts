@@ -115,6 +115,7 @@ createIneqs pcs vars =
       pcseqs = map (\pc -> createContractIneq vars (fromJust $ elemIndex pc pcs') pc) pcs'
   in sumto1 <> nonneg <> pcseqs
 
+-- todo: check if this is correct
 createContractIneq :: [Var] -> Int -> ProbContract a -> LinearEq
 createContractIneq vars id (ProbContract (Probability _ c p)) =
   -- left side vars

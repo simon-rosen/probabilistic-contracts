@@ -8,6 +8,7 @@ module ArgParser
   , Input (..)
   , Timeout (..)
   , Generator (..)
+  , Benchmarker (..)
   ) where
 
 import           Options.Applicative
@@ -17,10 +18,10 @@ import           Text.Read           (readMaybe)
 -- | I want to support two types of functionalities:
 -- 1. Verifying refinement of problem instances
 -- 2. Generating refinement problem instances
--- 3. Run a benchmark on a problem and optionally store the result in a sqlite database
+-- 3. Run a benchmark on a problem and store the result in a sqlite database
 data SubCommand = Verify Lang Input Timeout
                 | Generate Generator
-                | Benchmark Lang Input Timeout (Maybe String)
+                | Benchmark Benchmarker
                 deriving (Show)
 
 -- | The tool supports contracts written in these languages
@@ -37,6 +38,8 @@ data Input = ArgInput String
 
 type Timeout = Maybe Integer
 
+type RequiredTimeout = Integer
+
 -- | a subcommand for the generate command, that holds information
 -- on what to generate.
 -- Generating LTL problem has the parameters
@@ -48,6 +51,12 @@ type Timeout = Maybe Integer
 data Generator = GenerateLTL Int Int Int
                | GenerateMLTL Int Int Int Int
                deriving (Show)
+
+-- | a subcommand for the benchmark command. It has the same options as
+-- Generator along with a timeout and a name for the sqlite database.
+data Benchmarker = BenchmarkerLTL Int Int Int String RequiredTimeout
+                 | BenchmarkerMLTL Int Int Int Int String RequiredTimeout
+                 deriving (Show)
 
 -- | run the argument parser
 parseArgs :: IO SubCommand
@@ -99,6 +108,13 @@ pInput = pArgInput <|> pFileInput
 
 pTimeout :: Parser Timeout
 pTimeout = optional $ option auto
+    ( long "timeout"
+    <> metavar "INT"
+    <> help "sets a timeout for the verification algorithm"
+    )
+
+pRequiredTimeout :: Parser RequiredTimeout
+pRequiredTimeout = option auto
     ( long "timeout"
     <> metavar "INT"
     <> help "sets a timeout for the verification algorithm"
@@ -175,21 +191,37 @@ pMaxTime = option auto
 
 -- parsing benchmark subcommand
 pBenchmark :: Parser SubCommand
-pBenchmark = Benchmark
-  <$> pLang
-  <*> pInput
-  <*> pTimeout
+pBenchmark = subparser
+  ( command "LTL"
+      (info (Benchmark <$> pBenchmarkerLTL)
+        (progDesc "Run a benchmark on a random LTL refinement problem"))
+  <> command "MLTL"
+      (info (Benchmark <$> pBenchmarkerMLTL)
+        (progDesc "Run a benchmark on a random MLTL refinement problem"))
+  )
+
+pBenchmarkerLTL :: Parser Benchmarker
+pBenchmarkerLTL = BenchmarkerLTL
+  <$> pNumComponents
+  <*> pFormulaSize
+  <*> pAtomsPerVar
   <*> pDatabaseName
+  <*> pRequiredTimeout
 
+pBenchmarkerMLTL :: Parser Benchmarker
+pBenchmarkerMLTL = BenchmarkerMLTL
+  <$> pNumComponents
+  <*> pFormulaSize
+  <*> pAtomsPerVar
+  <*> pMaxTime
+  <*> pDatabaseName
+  <*> pRequiredTimeout
 
-pDatabaseName :: Parser (Maybe String)
-pDatabaseName = optional $ strOption
+pDatabaseName :: Parser String
+pDatabaseName = strOption
     ( long "database"
     <> metavar "FILE"
     <> help "Output benchmark results to the given SQLite database file"
     )
-
-
-
 
 

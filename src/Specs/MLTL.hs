@@ -16,6 +16,11 @@ import           System.Exit           (ExitCode (..))
 import           System.IO
 import           System.Process
 
+import           Control.Exception     (SomeException, evaluate, try)
+import qualified Data.ByteString.Char8 as BS8
+import           System.Exit           (ExitCode (..))
+import           System.Process        (readProcessWithExitCode)
+
 -- all temporal operators have bounded intervals associated
 type Interval = (Int, Int)
 
@@ -55,43 +60,16 @@ instance Show Formula where
 
 -- | convert a MLTL formula to LTL, by using an external tool called MLTLConvertor
 toLTL :: Formula -> IO (Either String LTL.Formula)
-toLTL f = bracket
-  -- startup code
-  (createProcess (proc "MLTLConvertor" ["-ltl", show f])
-      { std_in  = NoStream
-      , std_out = CreatePipe
-      , std_err = CreatePipe
-      })
-  -- cleanup code
-  (\(mhin, mhout, mherr, ph) -> do
-    mapM_ safeClose [mhin, mhout, mherr]
-    terminateProcess ph
-    _ <- waitForProcess ph
-    pure ()
-  )
-  -- worker code
-  (\(_mhin, mhout, mherr, _ph) -> do
-      out <- safeReadAndClose mhout
-      --putStrLn $ "converted to ltl"
-      err <- safeReadAndClose mherr
+toLTL f = do
+  (exitCode, out, err) <- readProcessWithExitCode "MLTLConvertor" ["-ltl", show f] ""
 
+  case exitCode of
+    ExitFailure code ->
+      pure $ Left $ "MLTLConvertor failed with code " ++ show code ++ ": " ++ err
+
+    ExitSuccess -> do
       parsed <- try (evaluate (parseLTL out)) :: IO (Either SomeException LTL.Formula)
       pure $ case parsed of
         Right ltl -> Right ltl
         Left ex   -> Left $ "Failed to parse LTL: " ++ show ex
-  )
-  where
-    safeReadAndClose :: Maybe Handle -> IO String
-    safeReadAndClose Nothing  = pure ""
-    safeReadAndClose (Just h) = do
-      out <- BS.hGetContents h
-      BS.length out `seq` hClose h
-      pure (BS8.unpack out)
-
-    safeClose :: Maybe Handle -> IO ()
-    safeClose Nothing  = pure ()
-    safeClose (Just h) = hClose h `catch` handler
-      where
-        handler :: IOException -> IO ()
-        handler _ = pure ()
 

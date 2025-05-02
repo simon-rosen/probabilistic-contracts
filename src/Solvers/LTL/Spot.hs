@@ -10,58 +10,30 @@ import           Specs.LTL
 import           System.IO
 import           System.Process
 
+import           Control.Exception (SomeException, evaluate, try)
+import           System.Exit       (ExitCode (..))
+import           System.Process    (readProcessWithExitCode)
+
 -- | solve a LTL formula with spot (my script that does both the translation
 -- to automata and then checks emptiness)
 solve :: Formula -> IO SolverResult
 solve f = callSpot (show f)
 
--- make a call to spot_ltl_sat.py and parse the result
---
--- this is implemented using the "bracket pattern" which automatically manages
--- external resources (in this case creation and termination of the external solver)
 callSpot :: String -> IO SolverResult
-callSpot str = bracket
-  -- startup code: start spot_ltl_sat.py
-  (createProcess (proc "spot_ltl_sat.py" [str])
-        { std_in = CreatePipe, std_out = CreatePipe, std_err = CreatePipe }
-  )
-  -- cleanup code: terminate the process and close all handles
-  (\(mhin, mhout, mherr, ph) -> do
-    -- close all handles (safely)
-    mapM_ safeClose [mhin, mhout, mherr]
-    -- terminate the child process
-    terminateProcess ph
-    _ <- waitForProcess ph
-    pure ()
-  )
-  -- worker code: run the solver and interpret the result
-  (\(mhin, mhout, mherr, ph) -> do
-    -- read the results
-    out <- safeReadAndClose mhout
-    -- and any errors
-    err <- safeReadAndClose mherr
-    -- parse it
-    case parseOut "sat" "unsat" out of
-      Right b -> pure $ Completed b
-      Left _-> do
-        let msg = "stdout: " <> out <> "\nstderr: " <> err
-        pure $ Failed msg
-    ) -- work
-  where
-    -- safely close a process handle
-    safeClose h = case h of
-      Nothing -> pure ()
-      Just h' -> hClose h' `finally` pure ()
-    -- safely read the contents from a file (strictly) handle and close it
-    safeReadAndClose h = case h of
-      Nothing -> pure ""
-      Just h' -> do
-        out <- hGetContents h'
-        -- make this a strict IO operation
-        _   <- evaluate (length out)
-        hClose h'
-        pure out
+callSpot formulaStr = do
+  (exitCode, out, err) <- readProcessWithExitCode "spot_ltl_sat.py" [] (show formulaStr)
 
+  case exitCode of
+    ExitFailure code ->
+      pure $ Failed $
+        "spot_ltl_sat.py exited with code " <> show code <> "\nstderr: " <> err
+
+    ExitSuccess -> do
+      parsed <- try (evaluate (parseOut "sat" "unsat" out)) :: IO (Either SomeException (Either String Bool))
+      case parsed of
+        Right (Right b) -> pure $ Completed b
+        Right (Left msg) -> pure $ Failed $ "Unrecognized output from spot_ltl_sat.py: " <> msg
+        Left ex -> pure $ Failed $ "Exception while parsing Spot output: " <> show ex
 
 
 parseOut :: String -> String -> String -> Either String Bool

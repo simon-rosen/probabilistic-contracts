@@ -38,9 +38,9 @@ library
       Contracts.Refinement.Refines
       Math
       ArgParser
-  other-modules:
       Benchmark.Benchmark
       Benchmark.Database
+  other-modules:
       Contracts.Refinement.Reductions.LinearEq
       Contracts.Refinement.Reductions.Reduction
       Solvers.LinearEq.Z3

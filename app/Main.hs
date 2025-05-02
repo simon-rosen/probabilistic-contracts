@@ -1,9 +1,14 @@
 module Main (main) where
 
 import           ArgParser
+import           Benchmark.Benchmark          (runLTLBenchmark,
+                                               runMLTLBenchmark)
+import           Benchmark.Database           (createLTLProblemsTable,
+                                               createMLTLProblemsTable)
 import           Contracts.Probabilistic
 import           Contracts.Refinement.Refines
 import           Control.Concurrent.Timeout   (timeout)
+import           Database.SQLite.Simple       (Connection, close, open)
 import qualified Generate.ProbContract        as GenProb
 import           Parse.LTLParser              (parseLTLRefinementProblem)
 import           Parse.MLTLParser             (parseMLTLRefinementProblem)
@@ -47,18 +52,18 @@ main = do
         putStrLn $ show prob
 
     -- benchmarking the algorithm for problems
-    Benchmark l inp timeout db -> case l of
-      LTL -> case inp of
-        ArgInput str -> do
-          putStrLn "hi"
-        FileInput path -> do
-          putStrLn "hi"
+    Benchmark benchmarker -> case benchmarker of
+      BenchmarkerLTL comps size atoms db t -> do
+        conn <- open db
+        createLTLProblemsTable conn
+        runLTLBenchmark conn comps size atoms t t
+        close conn
 
-      MLTL -> case inp of
-        ArgInput str -> do
-          putStrLn "hi"
-        FileInput path -> do
-          putStrLn "hi"
+      BenchmarkerMLTL comps size atoms maxt db t -> do
+        conn <- open db
+        createMLTLProblemsTable conn
+        runMLTLBenchmark conn comps size atoms maxt t t
+        close conn
 
 
 
@@ -80,8 +85,6 @@ verify p t =  case t of
           Right True  -> putStrLn "true"
 
 
--- handler for the benchmark command
-benchmark :: 
 
 
 

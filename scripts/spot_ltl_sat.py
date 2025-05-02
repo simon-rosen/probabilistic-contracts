@@ -14,13 +14,10 @@ def is_satisfiable(ltl_formula: str) -> bool:
     return not aut.is_empty()
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python check_sat.py '<ltl_formula>'")
-        sys.exit(1)
-
-    ltl = sys.argv[1]
+    # read the formula from stdin
+    ltl = sys.stdin.read()
+    # check sat with spot
     if is_satisfiable(ltl):
         print("sat")
     else:
         print("unsat")
-
