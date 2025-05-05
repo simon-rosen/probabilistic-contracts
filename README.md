@@ -54,6 +54,7 @@ Spot can be a bit more complicated to install, and it is importand that the
 python bindings are installed. However, spot is a really well documented tool
 and installation instructions for multiple systems is located [here](https://spot.lre.epita.fr/install.html).
 
+###### spot_ltl_sat.py
 In order to solve LTL formulas with spot I wrote a little python script that
 uses the spot api to first convert the formulas to automata, and then checks
 emptiness on the automata. This script is located in my project
@@ -61,6 +62,9 @@ emptiness on the automata. This script is located in my project
 * first make it executable `chmod +x scripts/spot_ltl_sat.py`
 * then copy it into a folder that is on your `$PATH`, for example `cp
   scripts/spot_ltl_sat.py ~/.local/bin`
+
+If python is called python3 on your system you may have to change the first line
+in the script to `#!/usr/bin/python3` instead of `#!/user/bin/python`.
 
 ##### MLTLConvertor
 This tool was part of a larger set of tools used for an article on MLTL
