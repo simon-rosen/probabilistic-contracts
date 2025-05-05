@@ -2,7 +2,8 @@ module Contracts.Refinement.Refines where
 import           Contracts.Probabilistic
 import           Contracts.Refinement.Reductions.LinearEq  (LinearEq (..))
 import qualified Contracts.Refinement.Reductions.Reduction as Reduction
-import           Control.Monad                             (filterM, mapM)
+import           Control.Monad                             (filterM, mapM,
+                                                            replicateM)
 import           Data.Bits                                 ((.&.))
 import           Data.List                                 (elemIndex)
 import           Data.Maybe                                (fromJust)
@@ -101,6 +102,26 @@ nonZeroVars solver pcs = do
   case sequence res of
     Left err   -> pure $ Left err
     Right sats -> pure $ Right [var | (var, True) <- zip vars sats]
+
+-- | maybe a better way of finding all non-zero vars. The zero vars can only happen
+-- between dependencies?
+linearZeroVars :: (Solvable a) => String -> [ProbContract a] -> IO (Either String [Var])
+linearZeroVars solver pcs = do
+  let
+  where
+    pairwise :: Int -> IO (Either String [Var])
+    pairwise i = do
+      let localcomps = [pcs !! i] <> [pcs !! (i+1)]
+      let vars = [NumberedVar "z" i | i <- [0..(2^(2 * 2) - 1)]]
+      res <- mapM (\var -> Solvable.solve solver (varFormula localcomps var)) vars
+      case sequence res of
+        Left err   -> pure $ Left err
+        Right sats -> do
+          let zeros = [var | (var, False) <- zip vars sats]
+          -- now we pad the beginning and end
+          let before = replicateM (i-1) [0,1]
+          let after = replicateM (i-1) [0,1]
+
 
 -- | reduce refinement verification to solving a system of linear inequalities
 createIneqs :: (Eq a) => [ProbContract a] -> [Var] -> [LinearEq]
