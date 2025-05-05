@@ -60,7 +60,7 @@ I installed spot by downloading the tarball for spot-2.13 and then
 cd spot-2.13
 ./configure
 make
-make install
+sudo make install
 ```
 
 And I had to add a path to my python search path.
