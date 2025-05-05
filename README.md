@@ -25,6 +25,7 @@ dependencies...
 * SAT-solvers for LTL: [BLACK - a symbolic solver based on SAT-solvers for propositional logic](https://www.black-sat.org/en/stable/), [Spot - among other things this tool can solve LTL formulas by converting them to omega-automata and checking language emptiness](https://spot.lre.epita.fr/), [Altaa - a very good LTL solver](https://github.com/lijwen2748/aalta)
 * SMT-solver: [Z3](https://github.com/Z3Prover/z3)
 * A tool for converting MLTL formulas to LTL: [MLTLConvertor](https://github.com/lijwen2748/mltlsat)
+* (Also sqlite3 is needed for the benchmarking)
 
 If you are interested in undertstanding how these external tool are used, then
 in short:
@@ -53,6 +54,16 @@ Aalta is also easy to install. The documentation on how to do this is on its
 Spot can be a bit more complicated to install, and it is importand that the
 python bindings are installed. However, spot is a really well documented tool
 and installation instructions for multiple systems is located [here](https://spot.lre.epita.fr/install.html).
+
+I installed spot by downloading the tarball for spot-2.13 and then
+```bash
+cd spot-2.13
+./configure
+make
+make install
+```
+
+And I had to add a path to my python search path.
 
 ###### spot_ltl_sat.py
 In order to solve LTL formulas with spot I wrote a little python script that
