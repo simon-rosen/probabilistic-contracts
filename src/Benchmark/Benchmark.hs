@@ -37,17 +37,18 @@ benchmarkRefinement varsTime sysTime problem = do
   putStrLn "finding vars"
   t0 <- getCurrentTime
   eVars <- timeout (varsTime*oneSecond) $ nonZeroVars "portfolio" contracts
-  t1 <- getCurrentTime
   case eVars of
     Nothing -> pure $ Left "finding vars error: timeout"
     Just (Left err) -> pure $ Left ("finding vars error: "<> err)
     Just (Right vars) -> do
-      _ <- evaluate (length vars)
+      _ <- evaluate (length vars) -- force evaluation before timing ends
+      t1 <- getCurrentTime
       -- solve the equation system
       -- the timeout for this is also 10min
       putStrLn "solving sys"
       t2 <- getCurrentTime
       res <- timeout (sysTime*oneSecond) $ createAndSolveIneqs contracts vars
+      _ <- evaluate res -- force evaluation before timing ends
       t3 <- getCurrentTime
       case res of
         Nothing             -> pure $ Left "solving sys error: timeout"

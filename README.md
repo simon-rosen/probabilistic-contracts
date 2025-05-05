@@ -3,64 +3,91 @@ This project will implement a refinement verification algorithm for
 probabilistic contracts, described in
 https://link.springer.com/chapter/10.1007/978-3-031-35257-7_6.
 
-## Project overview
+## How to install the tool
 
-### steps
-1. Identify variables that should equal 0 and variables that should be greater
-   or equal to 0. (Language emptiness check / satisfiability check on the
-   specifications)
-2. Create the system of linear inequalities.
-3. Solve the equation system.
+The tool itself should be easy to install. It is written in Haskell and uses
+[stack](https://docs.haskellstack.org/en/stable/) as the build system so make
+sure you have this installed. Then do the following:
 
-#### step 1 - language emptiness / satisfiability
-Step 1 is done by checking language emptiness / satisfiability of each 
-combination of specifications or their complement, 
-ex: A0 & G0 & A1^C & G1^C & ... & An & Gn. There is 2^(2n) such combinations.
-The language emptiness / satisfiability checks can and should be ofloaded to an
-external tool.
+1. Clone this repository
+2. `cd` into it and type `stack build` to compile the project.
+3. After compiling, type `stack install` to move the executable file into the
+   directory that stack think is suitable. On a linux system the file will be
+   placed under `~/.local/bin` so make sure that this direcroty is included in
+   your `$PATH`.
+4. The executable will be called `probabilistic-contracts-exe` so try to invoke
+   the tool by entering this in the terminal. 
 
-#### step 2 - creating the equation system
-Each variable z0,  ..., z(2^(2n) - 1) can be associated with a specific
-combination of specs by letting the binary representation of its number
-represent what specs are complemented and not for this variable, ex: 
-z13 = 001101_2 would mean that this variable represents the combination of specs
-A0^C & G0^C & A1 & G1 & A2^C & G2.
+But, in order for the tool to work we also have to install a couple of
+dependencies...
 
-When creating the equations representing the probability of each contract we can
-use this meaning behind the variables to identify all variables that contain (Ai
-& Gi) or (Ai) by using bitwise masking.
-
-#### step 3 - solve equation system
-When the equation system is ready it can be solved by an external tool. For
-example, one can represent it in smt2 format and send it to z3.
-
-### modularity of this implementation
-The steps above illustrate that an implementation of this algorithm can benefit
-from using external tools for solving both step 1 and step 3. Relying on
-external tools for these steps makes the implementation very modular: it would
-be possible to add new specification languages by making small changes to the
-code and using new tools that operate on these languages.
-
-If one wants to add support to something like timed automata later on, the
-simplest solution would be to create a separate program that can manipulate
-timed automata and use this tool as an external dependency for this program.
-
-## Dependencies
-It will rely quite heavily on external tools for solving satisfiability of
-different logics.
-
-* SAT-solver for propositional logic: [kissat](https://github.com/arminbiere/kissat)
-* SAT-solvers for LTL: [BLACK - a symbolic solver based on SAT-solvers for propositional logic](https://www.black-sat.org/en/stable/), [Spot - a non-symbolic solver based on automata](https://spot.lre.epita.fr/), [Altaa - a hybrid approach](https://github.com/lijwen2748/aalta)
+### Dependencies
+* SAT-solvers for LTL: [BLACK - a symbolic solver based on SAT-solvers for propositional logic](https://www.black-sat.org/en/stable/), [Spot - among other things this tool can solve LTL formulas by converting them to omega-automata and checking language emptiness](https://spot.lre.epita.fr/), [Altaa - a very good LTL solver](https://github.com/lijwen2748/aalta)
 * SMT-solver: [Z3](https://github.com/Z3Prover/z3)
-* PSAT-solver: ?
+* A tool for converting MLTL formulas to LTL: 
 
-## syntax of the contracts
+If you are interested in undertstanding how these external tool are used, then
+in short:
 
-The tool is meant to be used to solve refinement problems for probabilistic
-contracts specified with LTL and MLTL.
+* The LTL solvers are used to solve satisfiability on an exponential amount of LTL formulas 
+  ( exponential in the number of components).
+* A system of linear equations are built up based on the result of the previous
+  step, and this system is then solved using the LRA solver of z3.
+* (In order to also support MLTL, the MLTLConvertor is used to convert MLTL
+  formulas to LTL so that the same solvers can be used to support also MLTL
+  formulas)
+
+#### More on installing the dependencies
+Make sure all of these tools are in your `$PATH` after having installed them.
+
+##### Black 
+Black is easy to install and has good documentation on how to do so [here](https://www.black-sat.org/en/stable/installation.html).
+
+I would recommend to install z3 first because Black uses it as a dependecy.
+
+##### Aalta 
+Aalta is also easy to install. The documentation on how to do this is on its
+[github page](https://github.com/lijwen2748/aalta).
+
+##### Spot
+Spot can be a bit more complicated to install, and it is importand that the
+python bindings are installed. However, spot is a really well documented tool
+and installation instructions for multiple systems is located [here](https://spot.lre.epita.fr/install.html).
+
+In order to solve LTL formulas with spot I wrote a little python script that
+uses the spot api to first convert the formulas to automata, and then checks
+emptiness on the automata. This script is located in my project
+`scripts/spot_ltl_sat.py`. Install this script in your `$PATH`:
+* first make it executable `chmod +x scripts/spot_ltl_sat.py`
+* then copy it into a folder that is on your `$PATH`, for example `cp
+  scripts/spot_ltl_sat.py ~/.local/bin`
+
+##### MLTLConvertor
+This tool was part of a larger set of tools used for an article on MLTL
+satisfiability testing. The whole project is located
+[here](https://github.com/lijwen2748/mltlsat), but to compile just the
+convertor:
+* clone the larger project
+* go to the `translator/src` folder and type `make run`
+* copy the `MLTLConvertor` binary into a folder that is in your `$PATH`, for
+  example `cp MLTLConvertor ~/.local/bin`
+
+##### z3
+z3 should be the simplest external tool to install, either clone the [github repository](https://github.com/Z3Prover/z3)
+or download it with your package manager.
 
 ## How to use the tool
-### solving refinement
+### Solving refinement
+The main use of this tool is for verifying refinement of probabilistic contracts
+specified with LTL or MLTL. View how to do this by typing the command:
+
+```bash
+probabilistic contracts
+```
+
+#### Syntax
+
+#### Some examples
 Here are some examples on how the tool is expected to be used from the command
 line.
 
@@ -77,6 +104,29 @@ probabilistic-contracts solve --lang MLTL --problem 'P(((p4) -> (G[2,2](F[1,6](p
 *OBS*: use single quotes '' instead of double quotes "" around the problem to avoid weird bash bugs.
 
 
-### generating testcases
-The tool can also generate random problem instances.
+### Generating testcases
+The tool can also generate random problem instances. View how to do this by
+entering the command:
 
+```bash
+probabilistic-contracts-exe generate -h
+```
+
+### Benchmarking the algorithm
+The tool can also be used to benchmark the algorithm on random instances. View
+how to do this by entering the command:
+
+```bash
+probabilistic-contracts-exe benchmark -h
+```
+
+### Warning
+
+This tool manually stops each external tool by calling for example `pkill -9 -f
+z3`,  so if you are running any other instances of these solvers they would also
+be shut down. The reason I did it like this was because I realized rather late
+that lazy IO in haskell was problematic (sometimes solvers would not get shut
+down, or I read from them after they were shut down)...
+
+This could of course be fixed, but the `pkill` solution worked for my needs and
+was really simple to implement.
