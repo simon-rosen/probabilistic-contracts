@@ -24,7 +24,7 @@ dependencies...
 ### Dependencies
 * SAT-solvers for LTL: [BLACK - a symbolic solver based on SAT-solvers for propositional logic](https://www.black-sat.org/en/stable/), [Spot - among other things this tool can solve LTL formulas by converting them to omega-automata and checking language emptiness](https://spot.lre.epita.fr/), [Altaa - a very good LTL solver](https://github.com/lijwen2748/aalta)
 * SMT-solver: [Z3](https://github.com/Z3Prover/z3)
-* A tool for converting MLTL formulas to LTL: 
+* A tool for converting MLTL formulas to LTL: [MLTLConvertor](https://github.com/lijwen2748/mltlsat)
 
 If you are interested in undertstanding how these external tool are used, then
 in short:
@@ -82,7 +82,7 @@ The main use of this tool is for verifying refinement of probabilistic contracts
 specified with LTL or MLTL. View how to do this by typing the command:
 
 ```bash
-probabilistic contracts
+probabilistic-contracts-exe -h
 ```
 
 #### Syntax
