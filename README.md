@@ -82,7 +82,11 @@ The main use of this tool is for verifying refinement of probabilistic contracts
 specified with LTL or MLTL. View how to do this by typing the command:
 
 ```bash
+<<<<<<< HEAD
 probabilistic-contracts-exe -h
+=======
+probabilistic contracts
+>>>>>>> d66b66e85d7835bd3594bac0177ef2635ac179b2
 ```
 
 #### Syntax
