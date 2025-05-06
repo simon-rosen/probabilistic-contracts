@@ -35,10 +35,3 @@ callAalta input = do
         Right (Left msg) -> pure $ Failed $ "Unrecognized output from aalta: " <> msg
         Left ex -> pure $ Failed $ "Exception while parsing Aalta output: " <> show ex
 
-
-parseOut :: String -> String -> String -> Either String Bool
-parseOut sat unsat out
-  | unsat `isInfixOf` out = Right False
-  | sat `isInfixOf` out = Right True
-  | otherwise = Left out
-

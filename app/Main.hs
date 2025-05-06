@@ -26,22 +26,22 @@ main = do
       LTL -> case inp of
         ArgInput str -> do
           let p = parseLTLRefinementProblem str
-          verify p timeout
+          verify "portfolio" p timeout
 
         FileInput path -> do
           str <- readFile path
           let p = parseLTLRefinementProblem str
-          verify p timeout
+          verify "portfolio" p timeout
 
       MLTL -> case inp of
         ArgInput str -> do
           let p = parseMLTLRefinementProblem str
-          verify p timeout
+          verify "smt" p timeout
 
         FileInput path -> do
           str <- readFile path
           let p = parseMLTLRefinementProblem str
-          verify p timeout
+          verify "smt" p timeout
 
     -- generating problems
     Generate generator -> case generator of
@@ -72,13 +72,13 @@ main = do
 
 
 -- handler for the verify command
-verify :: (Eq a, Solvable a) => RefinementProblem a -> Maybe Integer -> IO ()
-verify p t =  case t of
+verify :: (Eq a, Solvable a) => String -> RefinementProblem a -> Maybe Integer -> IO ()
+verify solver p t =  case t of
   Nothing -> do
-    res <- refines "portfolio" "z3" (systemContract p) (componentContracts p)
+    res <- refines solver "z3" (systemContract p) (componentContracts p)
     handleRes res
   Just secs -> do
-    res <- timeout (1000000*secs) $ refines "portfolio" "z3" (systemContract p) (componentContracts p)
+    res <- timeout (1000000*secs) $ refines solver "z3" (systemContract p) (componentContracts p)
     case res of
       Nothing  -> do
         killProcesses

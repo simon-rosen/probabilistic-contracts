@@ -29,9 +29,3 @@ solve f = do
         Left ex -> pure $ Failed $ "Exception while parsing black output: " <> show ex
 
 
-
-parseOut :: String -> String -> String -> Either String Bool
-parseOut sat unsat out
-  | unsat `isInfixOf` out = Right False
-  | sat `isInfixOf` out = Right True
-  | otherwise = Left out

@@ -2,6 +2,7 @@ module Contracts.Refinement.Refines where
 import           Contracts.Probabilistic
 import           Contracts.Refinement.Reductions.LinearEq  (LinearEq (..))
 import qualified Contracts.Refinement.Reductions.Reduction as Reduction
+import           Control.Exception                         (evaluate)
 import           Control.Monad                             (filterM, mapM,
                                                             replicateM)
 import           Data.Bits                                 ((.&.))
@@ -25,15 +26,19 @@ refines :: (Eq a, Solvable a) => String -> String ->
   ProbContract a -> [ProbContract a] -> IO (Either String Bool)
 refines specSolver ineqSolver sysSpec componentSpecs = do
   -- step 1: calculate the nonempty variables
-  Right vars <- nonZeroVars specSolver (sysSpec : componentSpecs)
-  -- step 2: create system of linear inequalities
-  let ineqs = createIneqs (sysSpec : componentSpecs) vars
-  -- step 3: solve the equation system
-  --let smt = toSMT vars ineqs
-  --putStrLn smt
-  --(Right solved) <- checkLineqs smt
-  Right solved <- Reduction.solve ineqSolver ineqs
-  pure $ Right (not solved)
+  eVars <- nonZeroVars specSolver (sysSpec : componentSpecs)
+  case eVars of
+    Left msg -> pure $ Left msg
+    Right vars -> do
+      _ <- evaluate (length vars) -- force evaluation before timing ends
+      -- step 2: create system of linear inequalities
+      let ineqs = createIneqs (sysSpec : componentSpecs) vars
+      -- step 3: solve the equation system
+      --let smt = toSMT vars ineqs
+      --putStrLn smt
+      --(Right solved) <- checkLineqs smt
+      Right solved <- Reduction.solve ineqSolver ineqs
+      pure $ Right (not solved)
 
 
 createAndSolveIneqs :: (Eq a) => [ProbContract a] -> [Var] -> IO (Either String Bool)
@@ -105,7 +110,7 @@ nonZeroVars solver pcs = do
 
 -- | maybe a better way of finding all non-zero vars. The zero vars can only happen
 -- between dependencies?
-linearZeroVars :: (Solvable a) => String -> [ProbContract a] -> IO (Either String [Var])
+{-linearZeroVars :: (Solvable a) => String -> [ProbContract a] -> IO (Either String [Var])
 linearZeroVars solver pcs = do
   let
   where
@@ -121,7 +126,7 @@ linearZeroVars solver pcs = do
           -- now we pad the beginning and end
           let before = replicateM (i-1) [0,1]
           let after = replicateM (i-1) [0,1]
-
+-}
 
 -- | reduce refinement verification to solving a system of linear inequalities
 createIneqs :: (Eq a) => [ProbContract a] -> [Var] -> [LinearEq]

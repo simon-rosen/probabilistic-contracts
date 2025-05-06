@@ -26,9 +26,9 @@ oneSecond = 1000000
 -- it took to solve the equation system.
 --
 -- Also record the number of "non-zero" variables and the result of the refinement
-benchmarkRefinement :: (Eq a, Solvable a) => Integer -> Integer -> (RefinementProblem a)
+benchmarkRefinementLTL :: (Eq a, Solvable a) => Integer -> Integer -> (RefinementProblem a)
   -> IO (Either String (Secs, Secs, Int, Bool))
-benchmarkRefinement varsTime sysTime problem = do
+benchmarkRefinementLTL varsTime sysTime problem = do
   let contracts = (systemContract problem : componentContracts problem)
   -- find all "non-empty" variables
   -- * the full search is given a timeout of 10min
@@ -63,6 +63,44 @@ benchmarkRefinement varsTime sysTime problem = do
           pure $ Right (secs1, secs2, numVars, refinesResult)
 
 
+benchmarkRefinementMLTL :: (Eq a, Solvable a) => Integer -> Integer -> (RefinementProblem a)
+  -> IO (Either String (Secs, Secs, Int, Bool))
+benchmarkRefinementMLTL varsTime sysTime problem = do
+  let contracts = (systemContract problem : componentContracts problem)
+  -- find all "non-empty" variables
+  -- * the full search is given a timeout of 10min
+  -- * each sat-check is given a timeout of 1min (there can be 2^n such sat checks
+  -- so if many of them takes > 1min then the total time could be too large)
+  putStrLn "finding vars"
+  t0 <- getCurrentTime
+  eVars <- timeout (varsTime*oneSecond) $ nonZeroVars "smt" contracts
+  case eVars of
+    Nothing -> pure $ Left "finding vars error: timeout"
+    Just (Left err) -> pure $ Left ("finding vars error: "<> err)
+    Just (Right vars) -> do
+      _ <- evaluate (length vars) -- force evaluation before timing ends
+      t1 <- getCurrentTime
+      -- solve the equation system
+      -- the timeout for this is also 10min
+      putStrLn "solving sys"
+      t2 <- getCurrentTime
+      res <- timeout (sysTime*oneSecond) $ createAndSolveIneqs contracts vars
+      _ <- evaluate res -- force evaluation before timing ends
+      t3 <- getCurrentTime
+      case res of
+        Nothing             -> pure $ Left "solving sys error: timeout"
+        Just (Left err)     -> pure $ Left ("solving sys error: " <> err)
+        Just (Right solved) -> do
+          let secs1 = realToFrac (diffUTCTime t1 t0) :: Double
+          let secs2 = realToFrac (diffUTCTime t3 t2) :: Double
+          let numVars = length vars
+          -- if the system is unsolvable then the refinement holds
+          let refinesResult = not solved
+          putStrLn $ "success: " <> show (secs1, secs2, numVars, refinesResult)
+          pure $ Right (secs1, secs2, numVars, refinesResult)
+
+
+
 -- | run one random benchmarks on LTL refinement problems in some parameter space
 runLTLBenchmark :: Connection -> Int -> Int -> Int -> Integer -> Integer -> IO ()
 runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
@@ -90,7 +128,7 @@ runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
                                       , ltlSolvingSysTime = 0.0
                                       }
   -- run the benchmark
-  benchRes <- benchmarkRefinement varsT sysT rp
+  benchRes <- benchmarkRefinementLTL varsT sysT rp
   case benchRes of
     Left err -> do
       let benchmark = probModel { ltlErrorMsg = err}
@@ -140,7 +178,7 @@ runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime varsT sysT =
                                        , mltlSolvingSysTime = 0.0
                                        }
   -- run the benchmark
-  benchRes <- benchmarkRefinement varsT sysT rp
+  benchRes <- benchmarkRefinementMLTL varsT sysT rp
   case benchRes of
     Left err -> do
       let benchmark = probModel { mltlErrorMsg = err }

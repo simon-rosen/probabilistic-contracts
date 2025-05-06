@@ -5,6 +5,7 @@ import qualified Solvers.LTL.Aalta          as Aalta
 import qualified Solvers.LTL.Black          as Black
 import qualified Solvers.LTL.Portfolio      as Portfolio
 import qualified Solvers.LTL.Spot           as Spot
+import qualified Solvers.MLTL.UsingSMT      as UsingSMT
 import           Solvers.Solver
 import qualified Specs.LTL                  as LTL
 import qualified Specs.MLTL                 as MLTL
@@ -47,9 +48,15 @@ instance Solvable LTL.Formula where
     _           -> pure $ Left ("unknown solver: " <> solver)
 
 instance Solvable MLTL.Formula where
-  solve solver f = do
-    converted <- MLTL.toLTL f
-    case converted of
-      Left err   -> (solverResultToEither <$> (pure $ Failed "failed during conversion"))
-      Right ltlF -> solve solver ltlF
+  solve solver f = case solver of
+    "ltl" -> do
+      -- 1. convert to LTL
+      converted <- MLTL.toLTL f
+      -- 2. solve using the portfolio LTL solver
+      case converted of
+        Left err   -> (pure $ Left "failed during conversion")
+        Right ltlF -> solve "portfolio" ltlF
+
+    "smt" -> solverResultToEither <$> UsingSMT.solve f
+    _ -> pure $ Left ("unknown solver: " <> solver)
 

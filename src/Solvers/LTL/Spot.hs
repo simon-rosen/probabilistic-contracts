@@ -36,9 +36,3 @@ callSpot formulaStr = do
         Left ex -> pure $ Failed $ "Exception while parsing Spot output: " <> show ex
 
 
-parseOut :: String -> String -> String -> Either String Bool
-parseOut sat unsat out
-  | unsat `isInfixOf` out = Right False
-  | sat `isInfixOf` out = Right True
-  | otherwise = Left out
-
