@@ -113,11 +113,22 @@ runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
               <> " atoms = " <> show ma
   -- get a random LTL refinement problem
   rp <- randomRefinementProblemWithLTL comps mfs ma
+  -- analyze LTL formulas
+  specs = concat [[a,g] | (ProbContract (Probability (a,g) _ _)) <- (systemContract : componentContracts)]
+  totalSize = sum . map (LTL.totalSize) $ specs
+  maxTotalDepth = maximum . map (LTL.maxTotalDepth) $ specs
+  totalSize = sum . map (LTL.totalSize) $ specs
+  maxTotalDepth = maximum . map (LTL.maxTotalDepth) $ specs
   -- create an initial model for the database
   let probModel = LTLProblemBenchmark { ltlProblem = show rp
                                       , ltlNumComponents = comps
                                       , ltlFormulaSize = mfs
                                       , ltlAtomsPerVar = ma
+                                      -- some more information about formulas
+                                      , ltlTotalSize = LTL.totalSize
+                                      , ltlMaxTotalDepth = LTL.maxTotalDepth
+                                      , ltlNumTemporalOperators = LTL.numTemporalOperators
+                                      , ltlMaxTemporalDepth = LTL.maxTemporalDepth
                                       -- some default values that will be overwritten based
                                       -- on the result of the benchmark
                                       , ltlCompleted = False
@@ -199,7 +210,6 @@ runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime varsT sysT =
       pure ()
 
 
-
 runBenchmarks :: IO ()
 runBenchmarks = do
   -- setup db
@@ -216,7 +226,5 @@ runBenchmarks = do
   close conn
   -- repeat
   --runBenchmarks
-
-
 
 

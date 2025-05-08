@@ -42,3 +42,64 @@ instance Show Formula where
         "(" <> show f1 <> ") " <> op <> " (" <> show f2 <> ")"
 
 
+-- | Count the size of the formula (number of nodes in the parse tree, including leafs)
+totalSize :: Formula -> Int
+totalSize f = case f of
+  Top           -> 1
+  Bottom        -> 1
+  Atom _        -> 1
+  Not f1        -> 1 + totalSize f1
+  Or f1 f2      -> 1 + totalSize f1 + totalSize f2
+  And f1 f2     -> 1 + totalSize f1 + totalSize f2
+  Implies f1 f2 -> 1 + totalSize f1 + totalSize f2
+  Next f1       -> 1 + totalSize f1
+  Future _ f1   -> 1 + totalSize f1
+  Globally _ f1 -> 1 + totalSize f1
+  Until _ f1 f2 -> 1 + totalSize f1 + totalSize f2
+
+-- | Count the max depth of the formula
+maxTotalDepth :: Formula -> Int
+maxTotalDepth f = case f of
+  Top           -> 0
+  Bottom        -> 0
+  Atom _        -> 0
+  Not f1        -> maxTotalDepth f1
+  Or f1 f2      -> max (maxTotalDepth f1) (maxTotalDepth f2)
+  And f1 f2     -> max (maxTotalDepth f1) (maxTotalDepth f2)
+  Implies f1 f2 -> max (maxTotalDepth f1) (maxTotalDepth f2)
+  Next f1       -> 1 + maxTotalDepth f1
+  Future _ f1   -> 1 + maxTotalDepth f1
+  Globally _ f1 -> 1 + maxTotalDepth f1
+  Until _ f1 f2 -> 1 + max (maxTotalDepth f1) (maxTotalDepth f2)
+
+-- | The number of temporal operators in a formula
+numTemporalOperators :: Formula -> Int
+numTemporalOperators f = case f of
+  Top           -> 0
+  Bottom        -> 0
+  Atom _        -> 0
+  Not f1        -> numTemporalOperators f1
+  Or f1 f2      -> numTemporalOperators f1 + numTemporalOperators f2
+  And f1 f2     -> numTemporalOperators f1 + numTemporalOperators f2
+  Implies f1 f2 -> numTemporalOperators f1 + numTemporalOperators f2
+  Next f1       -> 1 + numTemporalOperators f1
+  Future f1     -> 1 + numTemporalOperators f1
+  Globally f1   -> 1 + numTemporalOperators f1
+  Until f1 f2   -> 1 + numTemporalOperators f1 + numTemporalOperators f2
+
+-- | the maximum
+maxTemporalDepth :: Formula -> Int
+maxTemporalDepth f = case f of
+  Top           -> 0
+  Bottom        -> 0
+  Atom _        -> 0
+  Not f1        -> maxTemporalDepth f1
+  Or f1 f2      -> max (maxTemporalDepth f1) (maxTemporalDepth f2)
+  And f1 f2     -> max (maxTemporalDepth f1) (maxTemporalDepth f2)
+  Implies f1 f2 -> max (maxTemporalDepth f1) (maxTemporalDepth f2)
+  Next f1       -> 1 + maxTemporalDepth f1
+  Future f1     -> 1 + maxTemporalDepth f1
+  Globally f1   -> 1 + maxTemporalDepth f1
+  Until f1 f2   -> 1 + max (maxTemporalDepth f1) (maxTemporalDepth f2)
+
+

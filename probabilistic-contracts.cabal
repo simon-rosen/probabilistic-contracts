@@ -48,7 +48,6 @@ library
       Solvers.LTL.Black
       Solvers.LTL.Portfolio
       Solvers.LTL.Spot
-      Solvers.MLTL.UsingLTLSolvers
       Solvers.MLTL.UsingSMT
       Solvers.Solver
       Specs.MTL
