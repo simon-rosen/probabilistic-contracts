@@ -93,10 +93,10 @@ maxTotalDepth f = case f of
   Top           -> 0
   Bottom        -> 0
   Atom _        -> 0
-  Not f1        -> maxTotalDepth f1
-  Or f1 f2      -> max (maxTotalDepth f1) (maxTotalDepth f2)
-  And f1 f2     -> max (maxTotalDepth f1) (maxTotalDepth f2)
-  Implies f1 f2 -> max (maxTotalDepth f1) (maxTotalDepth f2)
+  Not f1        -> 1 + maxTotalDepth f1
+  Or f1 f2      -> 1 + max (maxTotalDepth f1) (maxTotalDepth f2)
+  And f1 f2     -> 1 + max (maxTotalDepth f1) (maxTotalDepth f2)
+  Implies f1 f2 -> 1+ max (maxTotalDepth f1) (maxTotalDepth f2)
   Future _ f1   -> 1 + maxTotalDepth f1
   Globally _ f1 -> 1 + maxTotalDepth f1
   Until _ f1 f2 -> 1 + max (maxTotalDepth f1) (maxTotalDepth f2)

@@ -9,6 +9,9 @@ import           Data.Time.Clock
 import           Database.SQLite.Simple       (Connection, close, open)
 import           Generate.ProbContract        (randomRefinementProblemWithLTL,
                                                randomRefinementProblemWithMLTL)
+import           Math
+import qualified Specs.LTL                    as LTL
+import qualified Specs.MLTL                   as MLTL
 import           Specs.Solvable
 import           System.Random                (randomRIO)
 
@@ -114,21 +117,25 @@ runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
   -- get a random LTL refinement problem
   rp <- randomRefinementProblemWithLTL comps mfs ma
   -- analyze LTL formulas
-  specs = concat [[a,g] | (ProbContract (Probability (a,g) _ _)) <- (systemContract : componentContracts)]
-  totalSize = sum . map (LTL.totalSize) $ specs
-  maxTotalDepth = maximum . map (LTL.maxTotalDepth) $ specs
-  totalSize = sum . map (LTL.totalSize) $ specs
-  maxTotalDepth = maximum . map (LTL.maxTotalDepth) $ specs
+  let specs = concat [[a,g] | (ProbContract (Probability (a,g) _ _)) <- (systemContract rp : componentContracts rp)]
+  let totalSize = sum . map (LTL.totalSize) $ specs
+  let maxTotalDepth = maximum . map (LTL.maxTotalDepth) $ specs
+  let numTemporalOperators = sum . map (LTL.numTemporalOperators) $ specs
+  let maxTemporalDepth = maximum . map (LTL.maxTemporalDepth) $ specs
+  putStrLn $ "info: " <> "total_size = " <> show totalSize
+                      <> ", max_total_depth = " <> show maxTotalDepth
+                      <> ", num_temporal_operators = " <> show numTemporalOperators
+                      <> ", max_temporal_depth = " <> show maxTemporalDepth
   -- create an initial model for the database
   let probModel = LTLProblemBenchmark { ltlProblem = show rp
                                       , ltlNumComponents = comps
                                       , ltlFormulaSize = mfs
                                       , ltlAtomsPerVar = ma
                                       -- some more information about formulas
-                                      , ltlTotalSize = LTL.totalSize
-                                      , ltlMaxTotalDepth = LTL.maxTotalDepth
-                                      , ltlNumTemporalOperators = LTL.numTemporalOperators
-                                      , ltlMaxTemporalDepth = LTL.maxTemporalDepth
+                                      , ltlTotalSize = totalSize
+                                      , ltlMaxTotalDepth = maxTotalDepth
+                                      , ltlNumTemporalOperators = numTemporalOperators
+                                      , ltlMaxTemporalDepth = maxTemporalDepth
                                       -- some default values that will be overwritten based
                                       -- on the result of the benchmark
                                       , ltlCompleted = False
@@ -171,14 +178,29 @@ runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime varsT sysT =
               <> " formulaSize = " <> show mfs
               <> " atoms = " <> show ma
               <> " maxTime  = " <> show mt
-  -- get a random LTL refinement problem
+  -- get a random MLTL refinement problem
   rp <- randomRefinementProblemWithMLTL comps mfs ma mt
+  -- analyze MLTL formulas
+  let specs = concat [[a,g] | (ProbContract (Probability (a,g) _ _)) <- (systemContract rp : componentContracts rp)]
+  let totalSize = sum . map (MLTL.totalSize) $ specs
+  let maxTotalDepth = maximum . map (MLTL.maxTotalDepth) $ specs
+  let numTemporalOperators = sum . map (MLTL.numTemporalOperators) $ specs
+  let maxTemporalDepth = maximum . map (MLTL.maxTemporalDepth) $ specs
+  putStrLn $ "info: " <> "total_size = " <> show totalSize
+                      <> ", max_total_depth = " <> show maxTotalDepth
+                      <> ", num_temporal_operators = " <> show numTemporalOperators
+                      <> ", max_temporal_depth = " <> show maxTemporalDepth
   -- create an initial model for the database
   let probModel = MLTLProblemBenchmark { mltlProblem = show rp
                                        , mltlNumComponents = comps
                                        , mltlFormulaSize = mfs
                                        , mltlAtomsPerVar = ma
                                        , mltlMaxTime = mt
+                                       -- some more information about formulas
+                                       , mltlTotalSize = totalSize
+                                       , mltlMaxTotalDepth = maxTotalDepth
+                                       , mltlNumTemporalOperators = numTemporalOperators
+                                       , mltlMaxTemporalDepth = maxTemporalDepth
                                        -- some default values that will be overwritten based
                                        -- on the result of the benchmark
                                        , mltlCompleted = False
