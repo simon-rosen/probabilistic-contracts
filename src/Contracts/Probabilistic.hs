@@ -1,5 +1,5 @@
 module Contracts.Probabilistic where
-import           Data.List (intersperse)
+import           Data.List (intercalate, intersperse)
 import           Math
 
 -- | a probabilistic contract
@@ -12,6 +12,8 @@ instance Complementable (ProbContract a) where
 instance Show a => Show (ProbContract a) where
   show (ProbContract (Probability (a, g) c p)) =
     "P(" <> show a <> ", " <> show g <> ") " <> show c <> " " <> show p
+  show (ProbContract (ProbabilityProd (a, g) c ps)) =
+    "P(" <> show a <> ", " <> show g <> ") " <> show c <> " " <> intercalate "*" (map show ps)
 
 mkProbContract :: (a, a) -> String -> Double -> ProbContract a
 mkProbContract (a, g) c p = ProbContract (Probability (a, g) (mkCompare c) p)

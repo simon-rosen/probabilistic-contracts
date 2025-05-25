@@ -21,7 +21,6 @@ import           Specs.Solvable                            (Solvable)
 -- If this function returns true then the refinement is correct,
 -- if it returns false then it is unknown.
 --
--- The first argument is a timeout for the spec sat solver
 refines :: (Eq a, Solvable a) => String -> String ->
   ProbContract a -> [ProbContract a] -> IO (Either String Bool)
 refines specSolver ineqSolver sysSpec componentSpecs = do
@@ -90,7 +89,7 @@ varFormula contracts var =
   let compbits = var2bin var (length contracts * 2)
   -- put the specifications from contracts [C0, C1, C2, C3]
   -- in a list [A0, G0, A1, G1, A2, G2, Al, G3]
-      specs = concatMap (\(ProbContract (Probability (a, g) _ _)) -> [a, g]) contracts
+      specs = concatMap (\(ProbContract p) -> let (a, g) = getProbEvent p in [a, g]) contracts
   -- complement all specs whose entry in bools is False
       specs' = zipWith
         (\spec compbit -> case compbit of; 1 -> spec; 0 -> complement spec) specs compbits
@@ -149,5 +148,11 @@ createContractIneq vars id (ProbContract (Probability _ c p)) =
   -- right side vars
       rhs = filter (\(NumberedVar _ var) -> aNum (fromIntegral id) .&. var == aNum (fromIntegral id)) vars
   in ContractEq lhs c p rhs
+createContractIneq vars id (ProbContract (ProbabilityProd _ c ps)) =
+  -- left side vars
+  let lhs = filter (\(NumberedVar _ var) -> agNum (fromIntegral id) .&. var == agNum (fromIntegral id)) vars
+  -- right side vars
+      rhs = filter (\(NumberedVar _ var) -> aNum (fromIntegral id) .&. var == aNum (fromIntegral id)) vars
+  in ContractEqProd lhs c ps rhs
 
 

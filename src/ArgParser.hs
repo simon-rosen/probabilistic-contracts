@@ -19,7 +19,7 @@ import           Text.Read           (readMaybe)
 -- 1. Verifying refinement of problem instances
 -- 2. Generating refinement problem instances
 -- 3. Run a benchmark on a problem and store the result in a sqlite database
-data SubCommand = Verify Lang Input Timeout
+data SubCommand = Verify Lang Input Timeout Bool
                 | Generate Generator
                 | Benchmark Benchmarker
                 deriving (Show)
@@ -48,14 +48,18 @@ type RequiredTimeout = Integer
 -- * number of atoms per I/O var set
 -- Generating MLTL problems has the same parameters, but also
 -- * the max timestamp for temporal operators
-data Generator = GenerateLTL Int Int Int
-               | GenerateMLTL Int Int Int Int
+--
+-- Both generators also support two types of generation:
+-- 1. using common specification patterns (set the Bool to true)
+-- 1. using fully random specifications (set the Bool to false)
+data Generator = GenerateLTL Int Int Int Bool
+               | GenerateMLTL Int Int Int Int Bool
                deriving (Show)
 
 -- | a subcommand for the benchmark command. It has the same options as
 -- Generator along with a timeout and a name for the sqlite database.
-data Benchmarker = BenchmarkerLTL Int Int Int String RequiredTimeout
-                 | BenchmarkerMLTL Int Int Int Int String RequiredTimeout
+data Benchmarker = BenchmarkerLTL Int Int Int String RequiredTimeout Bool
+                 | BenchmarkerMLTL Int Int Int Int String RequiredTimeout Bool
                  deriving (Show)
 
 -- | run the argument parser
@@ -89,7 +93,7 @@ pSubCommand = subparser
 
 -- parsing verify subcommand
 pVerify :: Parser SubCommand
-pVerify = Verify <$> pLang <*> pInput <*> pTimeout
+pVerify = Verify <$> pLang <*> pInput <*> pTimeout <*> pOptFlag
 
 pLang :: Parser Lang
 pLang = option (eitherReader readLang)
@@ -136,6 +140,12 @@ pFileInput = FileInput <$>
     <> help "the file where the refinement problem is stored"
     )
 
+pOptFlag :: Parser Bool
+pOptFlag = switch
+  ( long "opt"
+  <> help "Use the optimization during refinement that only checks each connection"
+  )
+
 -- parsing generate subcommand
 pGenerate :: Parser SubCommand
 pGenerate = subparser
@@ -152,6 +162,7 @@ pGenerateLTL = GenerateLTL
   <$> pNumComponents
   <*> pFormulaSize
   <*> pAtomsPerVar
+  <*> pCommon
 
 pGenerateMLTL :: Parser Generator
 pGenerateMLTL = GenerateMLTL
@@ -159,6 +170,13 @@ pGenerateMLTL = GenerateMLTL
   <*> pFormulaSize
   <*> pAtomsPerVar
   <*> pMaxTime
+  <*> pCommon
+
+pCommon :: Parser Bool
+pCommon = switch
+  ( long "common"
+  <> help "generate specifications based on common specification patterns"
+  )
 
 -- all options for generators
 pNumComponents :: Parser Int
@@ -207,6 +225,7 @@ pBenchmarkerLTL = BenchmarkerLTL
   <*> pAtomsPerVar
   <*> pDatabaseName
   <*> pRequiredTimeout
+  <*> pCommon
 
 pBenchmarkerMLTL :: Parser Benchmarker
 pBenchmarkerMLTL = BenchmarkerMLTL
@@ -216,6 +235,7 @@ pBenchmarkerMLTL = BenchmarkerMLTL
   <*> pMaxTime
   <*> pDatabaseName
   <*> pRequiredTimeout
+  <*> pCommon
 
 pDatabaseName :: Parser String
 pDatabaseName = strOption

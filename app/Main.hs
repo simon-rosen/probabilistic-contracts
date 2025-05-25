@@ -1,20 +1,21 @@
 module Main (main) where
 
 import           ArgParser
-import           Benchmark.Benchmark          (runLTLBenchmark,
-                                               runMLTLBenchmark)
-import           Benchmark.Database           (createLTLProblemsTable,
-                                               createMLTLProblemsTable)
+import           Benchmark.Benchmark               (runLTLBenchmark,
+                                                    runMLTLBenchmark)
+import           Benchmark.Database                (createLTLProblemsTable,
+                                                    createMLTLProblemsTable)
 import           Contracts.Probabilistic
+import           Contracts.Refinement.Optimization
 import           Contracts.Refinement.Refines
-import           Control.Concurrent.Timeout   (timeout)
-import           Control.Monad                (forM_)
-import           Database.SQLite.Simple       (Connection, close, open)
-import qualified Generate.ProbContract        as GenProb
-import           Parse.LTLParser              (parseLTLRefinementProblem)
-import           Parse.MLTLParser             (parseMLTLRefinementProblem)
+import           Control.Concurrent.Timeout        (timeout)
+import           Control.Monad                     (forM_)
+import           Database.SQLite.Simple            (Connection, close, open)
+import qualified Generate.ProbContract             as GenProb
+import           Parse.LTLParser                   (parseLTLRefinementProblem)
+import           Parse.MLTLParser                  (parseMLTLRefinementProblem)
 import           Specs.Solvable
-import           System.Process               (readProcessWithExitCode)
+import           System.Process                    (readProcessWithExitCode)
 
 main :: IO ()
 main = do
@@ -22,63 +23,63 @@ main = do
   -- matching on args
   case args of
     -- verifying refinement
-    Verify l inp timeout -> case l of
+    Verify l inp timeout opt -> case l of
       LTL -> case inp of
         ArgInput str -> do
           let p = parseLTLRefinementProblem str
-          verify "portfolio" p timeout
+          verify "portfolio" p timeout opt
 
         FileInput path -> do
           str <- readFile path
           let p = parseLTLRefinementProblem str
-          verify "portfolio" p timeout
+          verify "portfolio" p timeout opt
 
       MLTL -> case inp of
         ArgInput str -> do
           let p = parseMLTLRefinementProblem str
-          verify "smt" p timeout
+          verify "smt" p timeout opt
 
         FileInput path -> do
           str <- readFile path
           let p = parseMLTLRefinementProblem str
-          verify "smt" p timeout
+          verify "smt" p timeout opt
 
     -- generating problems
     Generate generator -> case generator of
-      GenerateLTL comps size atoms    -> do
-        prob <- GenProb.randomRefinementProblemWithLTL comps size atoms
+      GenerateLTL comps size atoms common   -> do
+        prob <- GenProb.randomRefinementProblemWithLTL common comps size atoms
         putStrLn $ show prob
 
-      GenerateMLTL comps size atoms time -> do
-        prob <- GenProb.randomRefinementProblemWithMLTL comps size atoms time
+      GenerateMLTL comps size atoms time common -> do
+        prob <- GenProb.randomRefinementProblemWithMLTL common comps size atoms time
         putStrLn $ show prob
 
     -- benchmarking the algorithm for problems
     Benchmark benchmarker -> case benchmarker of
-      BenchmarkerLTL comps size atoms db t -> do
+      BenchmarkerLTL comps size atoms db t common -> do
         conn <- open db
         createLTLProblemsTable conn
-        runLTLBenchmark conn comps size atoms t t
+        runLTLBenchmark conn common comps size atoms t t
         killProcesses
         close conn
 
-      BenchmarkerMLTL comps size atoms maxt db t -> do
+      BenchmarkerMLTL comps size atoms maxt db t common -> do
         conn <- open db
         createMLTLProblemsTable conn
-        runMLTLBenchmark conn comps size atoms maxt t t
+        runMLTLBenchmark conn common comps size atoms maxt t t
         killProcesses
         close conn
 
 
 
 -- handler for the verify command
-verify :: (Eq a, Solvable a) => String -> RefinementProblem a -> Maybe Integer -> IO ()
-verify solver p t =  case t of
+verify :: (Show a, Eq a, Solvable a) => String -> RefinementProblem a -> Maybe Integer -> Bool -> IO ()
+verify solver p t opt =  case t of
   Nothing -> do
-    res <- refines solver "z3" (systemContract p) (componentContracts p)
+    res <- solve p opt
     handleRes res
   Just secs -> do
-    res <- timeout (1000000*secs) $ refines solver "z3" (systemContract p) (componentContracts p)
+    res <- timeout (1000000*secs) $ solve p opt
     case res of
       Nothing  -> do
         killProcesses
@@ -89,6 +90,9 @@ verify solver p t =  case t of
           Left err    -> putStrLn $ "error: " <> show err
           Right False -> putStrLn "unknown"
           Right True  -> putStrLn "true"
+        solve p opt = if opt
+            then refines' (systemContract p) (componentContracts p)
+            else refines solver "z3" (systemContract p) (componentContracts p)
 
 
 

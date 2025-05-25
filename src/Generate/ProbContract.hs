@@ -15,34 +15,49 @@ import           System.Random           (randomRIO)
 -- the assumption can use the atoms related to the input variables (aAtoms)
 -- and the guarantee can use atoms related to both the input and the output
 -- variables (aAtoms + gAtoms)
-randomWithLTL :: Bool -> Bool -> Int -> ([LTL.Formula], [LTL.Formula]) -> IO (ProbContract LTL.Formula)
-randomWithLTL isFirst strictIneq size (aAtoms, gAtoms) = do
+--
+-- the first argument specifies if one should use a common specification patters, or go
+-- fully random.
+randomWithLTL :: Bool -> Bool -> Bool -> Int -> ([LTL.Formula], [LTL.Formula]) -> IO (ProbContract LTL.Formula)
+randomWithLTL common isFirst strictIneq size (aAtoms, gAtoms) = do
+  -- if the argument `common` is True then generate formulas using common
+  -- specification patterns
+  let generator =
+        if common
+          then GenLTL.randomCommonPattern
+          else GenLTL.random
   -- the first component should have Top as its input atoms
   a <- if isFirst
           then pure $ LTL.Top
-          else GenLTL.random size aAtoms
+          else generator size aAtoms
   -- the output formula should have the input atoms + the output atoms
   -- (in the first component there is no input atoms)
   g <- if isFirst
-          then GenLTL.random size gAtoms
-          else GenLTL.random size (aAtoms <> gAtoms)
+          then generator size gAtoms
+          else generator size (aAtoms <> gAtoms)
   c <- randomIneq strictIneq
   p <- randomRIO (0.0, 1.0) :: IO Double
   pure $ mkProbContract (a, g) c p
 
 -- | generate a random probabilistic contract P(A, G) <= 0.5 (just an example)
 -- where A and G are written in MLTL, and the inequalities are strict/non-strict
-randomWithMLTL :: Bool -> Bool -> Int -> ([MLTL.Formula], [MLTL.Formula])-> Int -> IO (ProbContract MLTL.Formula)
-randomWithMLTL isFirst strictIneq size (aAtoms, gAtoms) maxTime = do
+randomWithMLTL :: Bool -> Bool -> Bool -> Int -> ([MLTL.Formula], [MLTL.Formula])-> Int -> IO (ProbContract MLTL.Formula)
+randomWithMLTL common isFirst strictIneq size (aAtoms, gAtoms) maxTime = do
+  -- if the argument `common` is True then generate formulas using common
+  -- specification patterns
+  let generator =
+        if common
+          then GenMLTL.randomCommonPattern
+          else GenMLTL.random
   -- the first component should have Top as its input atoms
   a <- if isFirst
           then pure $ MLTL.Top
-          else GenMLTL.random size aAtoms maxTime
+          else generator size aAtoms maxTime
   -- the output formula should have the input atoms + the output atoms
   -- (in the first component there is no input atoms)
   g <- if isFirst
-          then GenMLTL.random size gAtoms maxTime
-          else GenMLTL.random size (aAtoms <> gAtoms) maxTime
+          then generator size gAtoms maxTime
+          else generator size (aAtoms <> gAtoms) maxTime
   c <- randomIneq strictIneq
   p <- randomRIO (0.0, 1.0) :: IO Double
   pure $ mkProbContract (a, g) c p
@@ -109,42 +124,42 @@ generateIOVarAtomsMLTL numComponents numAtomsPerVar = let
 -- * numComponents - the number of components in the generated problem
 -- * formulaSize - the size of each formula in the contracts
 -- * numAtoms - the number of atoms for each I/O variable
-randomRefinementProblemWithLTL :: Int -> Int -> Int -> IO (RefinementProblem LTL.Formula)
-randomRefinementProblemWithLTL numComponents formulaSize atomsPerVar = do
+randomRefinementProblemWithLTL :: Bool -> Int -> Int -> Int -> IO (RefinementProblem LTL.Formula)
+randomRefinementProblemWithLTL common numComponents formulaSize atomsPerVar = do
   -- set up the atoms for the I/O variables on each component
   let componentVarsAtoms = generateIOVarAtomsLTL numComponents atomsPerVar
   -- a system contract, the inequality is strict
   -- and it uses the atoms from the input variables of the first component
   -- and the output of the putput variable of the last component
-  sysContract <- randomWithLTL True True formulaSize
+  sysContract <- randomWithLTL common True True formulaSize
                   (fst $ head componentVarsAtoms, snd $ last componentVarsAtoms)
   -- component contracts, the inequalities are non-strict
   -- and they use their Input varisble for the assumption
   -- and their Input + Output variables for the guarantee
-  firstCompContract <- randomWithLTL True False formulaSize
+  firstCompContract <- randomWithLTL common True False formulaSize
       (fst $ head componentVarsAtoms, snd $ head componentVarsAtoms)
   restCompContracts <- forM (tail componentVarsAtoms)
-    (\varsAtoms -> randomWithLTL False False formulaSize varsAtoms)
+    (\varsAtoms -> randomWithLTL common False False formulaSize varsAtoms)
   pure $ RefinementProblem
     { systemContract = sysContract
     , componentContracts = firstCompContract : restCompContracts
     }
 
 -- | Generate a random refinement problem using contracts specified with MLTL
-randomRefinementProblemWithMLTL :: Int -> Int -> Int -> Int -> IO (RefinementProblem MLTL.Formula)
-randomRefinementProblemWithMLTL numComponents formulaSize atomsPerVar maxTime = do
+randomRefinementProblemWithMLTL :: Bool -> Int -> Int -> Int -> Int -> IO (RefinementProblem MLTL.Formula)
+randomRefinementProblemWithMLTL common numComponents formulaSize atomsPerVar maxTime = do
   -- set up the atoms for the I/O variables on each component
   let componentVarsAtoms = generateIOVarAtomsMLTL numComponents atomsPerVar
   -- a system contract, the inequality is strict
-  sysContract <- randomWithMLTL True True formulaSize
+  sysContract <- randomWithMLTL common True True formulaSize
                   (fst $ head componentVarsAtoms, snd $ last componentVarsAtoms) maxTime
   -- componen contracts, the inequalities are non-strict
   -- and they use their Input variable for the assumption
   -- and their Input + Output variables for the guarantee
-  firstCompContract <- randomWithMLTL True False formulaSize
+  firstCompContract <- randomWithMLTL common True False formulaSize
       (fst $ head componentVarsAtoms, snd $ head componentVarsAtoms) maxTime
   restCompContracts <- forM (tail componentVarsAtoms)
-    (\varsAtoms -> randomWithMLTL False False formulaSize varsAtoms maxTime)
+    (\varsAtoms -> randomWithMLTL common False False formulaSize varsAtoms maxTime)
   pure $ RefinementProblem
     { systemContract = sysContract
     , componentContracts = firstCompContract : restCompContracts

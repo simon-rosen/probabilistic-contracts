@@ -36,6 +36,7 @@ library
       Specs.Solvable
       Contracts.Probabilistic
       Contracts.Refinement.Refines
+      Contracts.Refinement.Optimization
       Math
       ArgParser
       Benchmark.Benchmark

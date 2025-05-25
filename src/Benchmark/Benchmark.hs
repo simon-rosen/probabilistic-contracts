@@ -105,8 +105,8 @@ benchmarkRefinementMLTL varsTime sysTime problem = do
 
 
 -- | run one random benchmarks on LTL refinement problems in some parameter space
-runLTLBenchmark :: Connection -> Int -> Int -> Int -> Integer -> Integer -> IO ()
-runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
+runLTLBenchmark :: Connection -> Bool -> Int -> Int -> Int -> Integer -> Integer -> IO ()
+runLTLBenchmark conn common maxComponents maxFormulaSize maxAtoms varsT sysT = do
   -- generate the random configuration
   comps <- randomRIO (1, maxComponents)
   mfs <- randomRIO (1, maxFormulaSize)
@@ -115,7 +115,7 @@ runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
               <> " formulaSize = " <> show mfs
               <> " atoms = " <> show ma
   -- get a random LTL refinement problem
-  rp <- randomRefinementProblemWithLTL comps mfs ma
+  rp <- randomRefinementProblemWithLTL common comps mfs ma
   -- analyze LTL formulas
   let specs = concat [[a,g] | (ProbContract (Probability (a,g) _ _)) <- (systemContract rp : componentContracts rp)]
   let totalSize = sum . map (LTL.totalSize) $ specs
@@ -167,8 +167,8 @@ runLTLBenchmark conn maxComponents maxFormulaSize maxAtoms varsT sysT = do
 
 
 -- | run one random benchmark on MLTL refinement problems in some parameter space
-runMLTLBenchmark :: Connection -> Int -> Int -> Int -> Int -> Integer -> Integer -> IO ()
-runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime varsT sysT = do
+runMLTLBenchmark :: Connection -> Bool -> Int -> Int -> Int -> Int -> Integer -> Integer -> IO ()
+runMLTLBenchmark conn common maxComponents maxFormulaSize maxAtoms maxTime varsT sysT = do
   -- generate the random configuration
   comps <- randomRIO (1, maxComponents)
   mfs <- randomRIO (1, maxFormulaSize)
@@ -179,7 +179,7 @@ runMLTLBenchmark conn maxComponents maxFormulaSize maxAtoms maxTime varsT sysT =
               <> " atoms = " <> show ma
               <> " maxTime  = " <> show mt
   -- get a random MLTL refinement problem
-  rp <- randomRefinementProblemWithMLTL comps mfs ma mt
+  rp <- randomRefinementProblemWithMLTL common comps mfs ma mt
   -- analyze MLTL formulas
   let specs = concat [[a,g] | (ProbContract (Probability (a,g) _ _)) <- (systemContract rp : componentContracts rp)]
   let totalSize = sum . map (MLTL.totalSize) $ specs

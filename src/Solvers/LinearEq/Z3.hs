@@ -30,6 +30,11 @@ toSMT ineqs =
       "(assert (" <> show c <> " (+ 0" <> concatMap (\v -> " " <> show v) vsl <> ") " <>
       -- right side
         "(* " <> showDouble p <> " (+ 0" <> concatMap (\v -> " " <> show v) vsr <> "))))\n"
+    ContractEqProd vsl c ps vsr ->
+      -- left side, added a 0 so that the equation makes when no variables are present
+      "(assert (" <> show c <> " (+ 0" <> concatMap (\v -> " " <> show v) vsl <> ") " <>
+      -- right side (productlist is expanded to "(* p1 p2 ...)")
+        "(* " <> unwords (map showDouble ps) <> " (+ 0" <> concatMap (\v -> " " <> show v) vsr <> "))))\n"
     ) ineqs <>
   -- instruct solver to check satisfiability
   "(check-sat)"
@@ -43,6 +48,7 @@ checkLineqs smt = do
   withSystemTempFile "lineqs.smt2" $ \tmpFile tmpHandle -> do
     hPutStr tmpHandle smt
     hClose tmpHandle
+    --putStrLn smt
     --res <- readProcess "z3" [tmpFile] ""
     -- print res
     --pure $ case res of

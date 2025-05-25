@@ -52,11 +52,29 @@ instance Show Var where
 
 -- | a type for representing probability statements, ex: P(x) = p
 data Probability x = Probability x Compare Double
+                   | ProbabilityProd x Compare [Double] -- used when the probability is a product of doubles stored in a list
                    deriving (Eq)
+
+-- getters
+getProbEvent :: Probability x -> x
+getProbEvent p = case p of
+  Probability x _ _     -> x
+  ProbabilityProd x _ _ -> x
+
+getProbCmp :: Probability x -> Compare
+getProbCmp p = case p of
+  Probability _ c _     -> c
+  ProbabilityProd _ c _ -> c
+
+getProbPs :: Probability x -> [Double]
+getProbPs pr = case pr of
+  Probability _ _ p      -> [p]
+  ProbabilityProd _ _ ps -> ps
 
 -- | complement a probabilistic statement: P(x) < p becomes P(x) >= p
 instance Complementable (Probability x) where
-  complement (Probability x r p) = Probability x (complement r) p
+  complement (Probability x r p)     = Probability x (complement r) p
+  complement (ProbabilityProd x r p) = ProbabilityProd x (complement r) p
 
 instance Show x => Show (Probability x) where
   show (Probability x r p) = "P(" <> show x <> ") " <> show r <> " " <> show p

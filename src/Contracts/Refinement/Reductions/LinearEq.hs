@@ -10,6 +10,8 @@ data LinearEq =
   -- the equation expressing the probability of a contract
   -- ex: z1 + z2 <= 0.5 * (z1 + z2 + z3)
   | ContractEq [Var] Compare Double [Var]
+  -- when probability is a list of products
+  | ContractEqProd [Var] Compare [Double] [Var]
   deriving (Show)
 
 -- | get all variables in a system of linear equations
@@ -18,7 +20,8 @@ getVars eqs = (Set.elems . Set.fromList ) $ concatMap getVar eqs
   where
     getVar :: LinearEq -> [Var]
     getVar eq = case eq of
-                  SumTo1 vs              -> vs
-                  NonNeg v               -> [v]
-                  IsZero v               -> [v]
-                  ContractEq vs1 _ _ vs2 -> vs1 <> vs2
+                  SumTo1 vs                  -> vs
+                  NonNeg v                   -> [v]
+                  IsZero v                   -> [v]
+                  ContractEq vs1 _ _ vs2     -> vs1 <> vs2
+                  ContractEqProd vs1 _ _ vs2 -> vs1 <> vs2
